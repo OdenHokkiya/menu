@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>北寄や HOKKIYA — Menu</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Zen+Maru+Gothic:wght@400;500;700;900&family=Baloo+2:wght@400;600;700&family=Gaegu:wght@400;700&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --enji:#8B1A1A;
+    --enji-deep:#6e1414;
+    --cream:#FBF1DC;
+    --cream-dim:#F0E2C0;
+    --koge:#3E2A1C;
+    --koge-soft:#9b7a5e;
+    --yellow:#F0B429;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background:var(--cream);
+    color:var(--koge);
+    -webkit-font-smoothing:antialiased;
+  }
+  body.lang-ja{font-family:'Zen Maru Gothic',sans-serif;}
+  body.lang-vi,body.lang-en,body.lang-ms{font-family:'Baloo 2',sans-serif;}
+  body.lang-ko{font-family:'Gaegu',sans-serif;}
+  body.lang-zh-Hant,body.lang-zh-Hans{font-family:'ZCOOL KuaiLe',sans-serif;}
+
+  header.top{
+    background:var(--enji);
+    color:var(--cream);
+    padding:20px 16px 26px;
+    text-align:center;
+    position:relative;
+  }
+  .mascot-slot{
+    width:84px;height:84px;
+    border-radius:50%;
+    background:var(--cream);
+    border:3px dashed var(--yellow);
+    display:flex;align-items:center;justify-content:center;
+    margin:0 auto 8px;
+    cursor:pointer;
+    font-size:36px;
+    overflow:hidden;
+  }
+  .mascot-slot img{width:100%;height:100%;object-fit:cover;}
+  .mascot-slot input{display:none;}
+  .brand-jp{
+    font-family:'Yusei Magic',cursive;
+    font-weight:400;
+    font-size:28px;
+    margin:2px 0 4px;
+    letter-spacing:0.06em;
+  }
+  .brand-jp .lantern{font-size:18px;vertical-align:0;margin:0 4px;}
+  .brand-en{
+    font-size:11px;
+    letter-spacing:0.3em;
+    color:var(--yellow);
+    margin:0 0 8px;
+  }
+  .tagline{
+    font-size:13px;
+    color:#f4e3c1;
+    margin:0;
+  }
+  .header-edge{
+    height:12px;
+    background:
+      linear-gradient(135deg, var(--enji) 25%, transparent 25.5%),
+      linear-gradient(225deg, var(--enji) 25%, transparent 25.5%);
+    background-size:14px 14px;
+    background-position:0 0, 7px 0;
+    background-color:var(--cream);
+  }
+
+  nav.lang-row, nav.cat-row{
+    position:sticky;
+    z-index:30;
+    display:flex;
+    overflow-x:auto;
+    -webkit-overflow-scrolling:touch;
+    scrollbar-width:none;
+  }
+  nav.lang-row::-webkit-scrollbar, nav.cat-row::-webkit-scrollbar{display:none;}
+  nav.lang-row{
+    top:0;
+    background:var(--cream-dim);
+    border-bottom:2px dashed var(--koge-soft);
+    padding:7px 8px;
+    gap:6px;
+  }
+  .lang-tab{
+    flex:0 0 auto;
+    font-size:12.5px;
+    color:var(--koge);
+    background:#fff;
+    border:1.5px solid var(--koge-soft);
+    border-radius:999px;
+    padding:6px 13px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .lang-tab.active{
+    background:var(--yellow);
+    color:var(--koge);
+    border-color:var(--yellow);
+    font-weight:700;
+  }
+  nav.cat-row{
+    top:0;
+    background:var(--cream);
+    border-bottom:2px dashed var(--koge-soft);
+    padding:10px 10px 9px;
+    gap:8px;
+  }
+  .cat-tab{
+    flex:0 0 auto;
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--enji);
+    background:#fff;
+    border:2px solid var(--enji);
+    border-radius:999px;
+    padding:7px 14px;
+    cursor:pointer;
+    white-space:nowrap;
+  }
+  .cat-tab.active{
+    background:var(--enji);
+    border-color:var(--enji);
+    color:var(--cream);
+  }
+  main{
+    max-width:680px;
+    margin:0 auto;
+    padding:16px 14px 50px;
+  }
+  .section-title{
+    font-weight:700;
+    font-size:19px;
+    color:var(--koge);
+    margin:8px 0 12px;
+    display:flex;
+    align-items:center;
+    gap:8px;
+    padding-bottom:8px;
+    border-bottom:3px dashed var(--yellow);
+  }
+  .mascot-mini{width:26px;height:26px;border-radius:50%;object-fit:cover;flex:0 0 auto;}
+  .mascot-mini-fallback{font-size:20px;flex:0 0 auto;}
+  .sub-title{
+    font-size:13.5px;
+    font-weight:700;
+    color:var(--enji);
+    margin:18px 2px 8px;
+  }
+  .item{
+    display:flex;
+    align-items:center;
+    gap:10px;
+    padding:9px 4px;
+    border-bottom:2px dashed var(--cream-dim);
+    background:#fff;
+    border-radius:12px;
+    margin-bottom:6px;
+    padding:9px 8px;
+  }
+  .photo-slot{
+    width:46px;height:46px;
+    flex:0 0 auto;
+    border-radius:10px;
+    border:2px dashed var(--koge-soft);
+    display:flex;align-items:center;justify-content:center;
+    background:var(--cream);
+    font-size:18px;
+    cursor:pointer;
+    overflow:hidden;
+  }
+  .photo-slot img{width:100%;height:100%;object-fit:cover;}
+  .photo-slot input{display:none;}
+  .item-main{flex:1;min-width:0;}
+  .item-name{
+    margin:0;
+    font-size:15px;
+    font-weight:700;
+    color:var(--koge);
+    line-height:1.4;
+  }
+  .num-badge{
+    display:inline-flex;
+    align-items:center;justify-content:center;
+    width:20px;height:20px;
+    border-radius:50%;
+    background:var(--yellow);
+    color:var(--koge);
+    font-size:11px;
+    font-weight:700;
+    margin-right:6px;
+  }
+  .item-jp{
+    margin:2px 0 0;
+    font-size:11.5px;
+    color:var(--koge-soft);
+  }
+  .item-price{
+    flex:0 0 auto;
+    text-align:right;
+    font-weight:700;
+    color:var(--enji);
+    font-size:14px;
+    white-space:nowrap;
+    line-height:1.5;
+  }
+  .item-price .price-bottle{
+    display:block;
+    font-size:11px;
+    font-weight:500;
+    color:var(--koge-soft);
+  }
+  .price-row-label{
+    font-weight:500;
+    font-size:11px;
+    color:var(--koge-soft);
+  }
+  .broth-card{
+    background:var(--koge);
+    color:var(--cream);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:18px;
+    border:2px dashed var(--yellow);
+  }
+  .broth-card h3{
+    margin:0 0 8px;
+    font-size:16px;
+    color:var(--yellow);
+  }
+  .broth-card p{
+    margin:0 0 10px;
+    font-size:13px;
+    line-height:1.65;
+    color:#ecdfc4;
+  }
+  .today-badge{
+    display:inline-block;
+    background:var(--yellow);
+    color:var(--koge);
+    font-size:11px;
+    font-weight:700;
+    padding:3px 10px;
+    border-radius:999px;
+    margin-bottom:6px;
+  }
+  .today-name{
+    font-weight:700;
+    font-size:15px;
+    color:#fff;
+    margin:0 0 4px;
+  }
+  .set-card{
+    background:#fff;
+    border:2px dashed var(--enji);
+    border-radius:14px;
+    padding:12px 14px;
+    margin-top:14px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+  }
+  .set-label{
+    font-size:11px;
+    color:var(--enji);
+    font-weight:700;
+    margin:0 0 2px;
+  }
+  footer{
+    text-align:center;
+    padding:24px 16px 40px;
+    color:var(--koge-soft);
+    font-size:12px;
+    line-height:1.7;
+  }
+  footer .addr-line{margin:2px 0;}
+</style>
+</head>
+<body>
+
+<header class="top">
+  <label class="mascot-slot" id="mascotSlot">
+    <span id="mascotFallback">🐻</span>
+    <input type="file" accept="image/*" id="mascotInput">
+  </label>
+  <p class="brand-jp"><span class="lantern">🏮</span>北寄や<span class="lantern">🏮</span></p>
+  <p class="brand-en">H O K K I Y A</p>
+  <p class="tagline" id="tagline"></p>
+</header>
+<div class="header-edge"></div>
+
+<nav class="lang-row" id="langRow"></nav>
+<nav class="cat-row" id="catRow"></nav>
+
+<main id="main"></main>
+
+<footer>
+  <p class="addr-line" id="footAddrLabel"></p>
+  <p class="addr-line">7/100 Lê Thánh Tôn, Phường Sài Gòn, TP.HCM</p>
+  <p class="addr-line" id="footHotlineLabel"></p>
+  <p class="addr-line">0792-515-838</p>
+  <p id="footNote" style="margin-top:10px;"></p>
+</footer>
+
+<script>
+const LANGS = [
+  {code:'ja', label:'日本語'},
+  {code:'vi', label:'Tiếng Việt'},
+  {code:'en', label:'English'},
+  {code:'ko', label:'한국어'},
+  {code:'zh-Hant', label:'繁體中文'},
+  {code:'zh-Hans', label:'简体中文'},
+  {code:'ms', label:'Bahasa Melayu'}
+];
+
+const UI = {
+  ja:{tagline:'北海道料理とおでんの店',cat_starters:'一品・サラダ',cat_fried:'揚げ物・炒め物',cat_grilled:'焼き物・名物',cat_riceNoodle:'丼・麺・おにぎり',cat_oden:'おでん',cat_drinks:'ドリンク',sub_beer:'ビール',sub_whisky:'ウイスキー',sub_sour:'サワー',sub_teaCocktail:'お茶ハイボール',sub_shochu:'焼酎',sub_sake:'日本酒',sub_softDrink:'ソフトドリンク',glass:'グラス',bottle:'ボトル',brothTitle:'おでん出汁について',brothBody:'北寄やのおでん出汁は、国産の昆布と鰹節だけで仕上げたやさしい和風スープです。旨味が具材にじっくり染み込み、心と体をあたためます。出汁はいつも同じではありません。「今日はどんな出汁かな？」というお楽しみを味わっていただけるよう、時々出汁を変えてご提供しています。',todaysBrothLabel:'本日の出汁',todaysBrothName:'味噌おでん',todaysBrothNote:'コクのある味噌の風味がスープと溶け合い、ひと品ひと品にまろやかにまとわりつきます。心の奥からあたたまる、どこか懐かしい味わいです。',setLabel:'おすすめセット',address:'住所',hotline:'電話',footerNote:'価格はすべてベトナムドン表記・税込です。'},
+  vi:{tagline:'Ẩm thực Hokkaido & Oden',cat_starters:'Khai vị & Salad',cat_fried:'Món chiên & xào',cat_grilled:'Món nướng & đặc sản',cat_riceNoodle:'Cơm, mì & onigiri',cat_oden:'Oden',cat_drinks:'Đồ uống',sub_beer:'Bia',sub_whisky:'Whisky',sub_sour:'Sour',sub_teaCocktail:'Cocktail trà',sub_shochu:'Shochu',sub_sake:'Sake',sub_softDrink:'Nước ngọt',glass:'Ly',bottle:'Chai',brothTitle:'Về nước dùng Oden',brothBody:'Nước dùng oden tại Hokkiya là món súp kiểu Nhật thanh nhẹ, nấu hoàn toàn từ tảo bẹ và cá bào có nguồn gốc từ Nhật Bản. Hương vị umami thấm sâu vào từng nguyên liệu, mang lại cảm giác ấm áp cho cơ thể. Chúng tôi thay đổi nước dùng theo thời gian để khách có thể thưởng thức với sự bất ngờ: "Hôm nay sẽ là vị gì nhỉ?"',todaysBrothLabel:'Nước dùng hôm nay',todaysBrothName:'Oden vị Miso',todaysBrothNote:'Hương vị miso đậm đà hòa quyện cùng nước dùng, nhẹ nhàng bao bọc từng nguyên liệu. Một hương vị ấm áp, hoài niệm, sưởi ấm từ bên trong.',setLabel:'Set đề xuất',address:'Địa chỉ',hotline:'Hotline',footerNote:'Giá đã bao gồm thuế, tính bằng VNĐ.'},
+  en:{tagline:'Hokkaido Cuisine & Oden',cat_starters:'Starters & Salads',cat_fried:'Fried & Stir-Fried',cat_grilled:'Grilled & Specialties',cat_riceNoodle:'Rice, Noodles & Onigiri',cat_oden:'Oden',cat_drinks:'Drinks',sub_beer:'Beer',sub_whisky:'Whisky',sub_sour:'Sour',sub_teaCocktail:'Tea Cocktails',sub_shochu:'Shochu',sub_sake:'Sake',sub_softDrink:'Soft Drinks',glass:'Glass',bottle:'Bottle',brothTitle:'About Our Oden Broth',brothBody:'At Hokkiya, our oden broth is a gentle Japanese-style soup made entirely from Japanese kelp and bonito flakes. The umami-rich flavor soaks deep into each ingredient, delivering warmth and comfort. The broth is not always the same — we change it from time to time so guests can enjoy wondering, "What kind of broth is it today?"',todaysBrothLabel:"Today's Broth",todaysBrothName:'Miso Oden',todaysBrothNote:'Rich miso flavor blends beautifully with the broth, gently coating each ingredient — a comforting, nostalgic taste that warms you from the inside.',setLabel:'Recommended Set',address:'Address',hotline:'Hotline',footerNote:'All prices in Vietnamese dong, tax included.'},
+  ko:{tagline:'홋카이도 요리와 오뎅 전문점',cat_starters:'에피타이저 & 샐러드',cat_fried:'튀김 & 볶음',cat_grilled:'구이 & 명물',cat_riceNoodle:'덮밥·면·오니기리',cat_oden:'오뎅',cat_drinks:'음료',sub_beer:'맥주',sub_whisky:'위스키',sub_sour:'사와',sub_teaCocktail:'차 칵테일',sub_shochu:'소주',sub_sake:'사케',sub_softDrink:'소프트드링크',glass:'글라스',bottle:'보틀',brothTitle:'오뎅 육수에 대하여',brothBody:'홋키야의 오뎅 육수는 모두 일본산 다시마와 가쓰오부시로 만든 부드럽고 깔끔한 일본식 국물입니다. 재료에 깊숙이 스며드는 감칠맛과 따뜻함이 특징입니다. "오늘은 어떤 육수일까?" 하는 즐거움을 느낄 수 있도록 때때로 육수를 바꿔서 제공하고 있습니다.',todaysBrothLabel:'오늘의 육수',todaysBrothName:'미소 오뎅',todaysBrothNote:'깊은 맛의 미소 풍미가 육수와 부드럽게 어우러져 재료 하나하나를 감싸줍니다. 마음 깊이 따뜻해지는, 어딘가 그리운 맛입니다.',setLabel:'추천 세트',address:'주소',hotline:'전화',footerNote:'모든 가격은 베트남 동(VND) 기준이며 세금이 포함되어 있습니다.'},
+  'zh-Hant':{tagline:'北海道料理與關東煮專門店',cat_starters:'開胃菜與沙拉',cat_fried:'炸物與炒物',cat_grilled:'燒物與招牌菜',cat_riceNoodle:'蓋飯・麵類・飯糰',cat_oden:'關東煮',cat_drinks:'飲品',sub_beer:'啤酒',sub_whisky:'威士忌',sub_sour:'沙瓦',sub_teaCocktail:'茶系調酒',sub_shochu:'燒酎',sub_sake:'日本酒',sub_softDrink:'軟性飲料',glass:'單杯',bottle:'整瓶',brothTitle:'關於關東煮高湯',brothBody:'北寄や的關東煮高湯，全採用日本國產昆布與柴魚熬製而成，是溫和的和風湯底。鮮甜滋味緩緩滲入每一份食材，帶來由心而暖的滋味。為了讓客人享受「今天會是什麼湯底呢？」的小驚喜，我們會不定期更換高湯口味。',todaysBrothLabel:'本日湯底',todaysBrothName:'味噌關東煮',todaysBrothNote:'濃郁的味噌風味與高湯完美融合，溫柔地包裹著每一份食材，是讓人從心底感到懷念與溫暖的味道。',setLabel:'推薦套餐',address:'地址',hotline:'電話',footerNote:'價格皆以越南盾標示，已含稅。'},
+  'zh-Hans':{tagline:'北海道料理与关东煮专门店',cat_starters:'开胃菜与沙拉',cat_fried:'炸物与炒物',cat_grilled:'烤物与招牌菜',cat_riceNoodle:'盖饭・面类・饭团',cat_oden:'关东煮',cat_drinks:'饮品',sub_beer:'啤酒',sub_whisky:'威士忌',sub_sour:'沙瓦',sub_teaCocktail:'茶系调酒',sub_shochu:'烧酒',sub_sake:'日本酒',sub_softDrink:'软饮料',glass:'单杯',bottle:'整瓶',brothTitle:'关于关东煮高汤',brothBody:'北寄や的关东煮高汤，全部采用日本国产昆布与柴鱼熬制而成，是温和的和风汤底。鲜美滋味缓缓渗入每一份食材，带来由心而暖的味道。为了让顾客享受"今天会是什么汤底呢？"的小惊喜，我们会不定期更换高汤口味。',todaysBrothLabel:'本日汤底',todaysBrothName:'味噌关东煮',todaysBrothNote:'浓郁的味噌风味与高汤完美融合，温柔地包裹着每一份食材，是让人从心底感到怀念与温暖的味道。',setLabel:'推荐套餐',address:'地址',hotline:'电话',footerNote:'价格均以越南盾标示，已含税。'},
+  ms:{tagline:'Masakan Hokkaido & Oden',cat_starters:'Pembuka Selera & Salad',cat_fried:'Goreng & Tumis',cat_grilled:'Bakar & Istimewa',cat_riceNoodle:'Nasi, Mi & Onigiri',cat_oden:'Oden',cat_drinks:'Minuman',sub_beer:'Bir',sub_whisky:'Wiski',sub_sour:'Sour',sub_teaCocktail:'Koktel Teh',sub_shochu:'Shochu',sub_sake:'Sake',sub_softDrink:'Minuman Ringan',glass:'Gelas',bottle:'Botol',brothTitle:'Tentang Sup Oden Kami',brothBody:'Sup oden Hokkiya disediakan sepenuhnya daripada kombu dan serpihan bonito buatan Jepun, menghasilkan sup gaya Jepun yang lembut. Rasa umami yang kaya meresap perlahan ke dalam setiap bahan, membawa rasa hangat dan menenangkan. Kami menukar sup dari semasa ke semasa supaya pelanggan dapat menikmati keseronokan bertanya, "Sup apa pula hari ini?"',todaysBrothLabel:'Sup Hari Ini',todaysBrothName:'Oden Miso',todaysBrothNote:'Perisa miso yang kaya bersatu dengan indah bersama sup, menyelaputi setiap bahan dengan lembut — rasa yang menenangkan dan membawa kenangan, menghangatkan dari dalam.',setLabel:'Set Disyorkan',address:'Alamat',hotline:'Talian Hotline',footerNote:'Semua harga dalam Dong Vietnam, termasuk cukai.'}
+};
+
+function N(ja,vi,en,ko,zt,zs,ms){return {ja:ja,vi:vi,en:en,ko:ko,'zh-Hant':zt,'zh-Hans':zs,ms:ms};}
+
+const DATA = {
+  starters:[
+    {num:1,names:N('ラーメンサラダ','Ramen salad','Ramen Salad','라멘 샐러드','拉麵沙拉','拉面沙拉','Salad Ramen'),price:78000},
+    {num:2,names:N('ツナ大根シーザーサラダ','Xà lách Caesar củ cải trắng cá ngừ','Tuna & Daikon Caesar Salad','참치 무 시저 샐러드','鮪魚白蘿蔔凱薩沙拉','金枪鱼白萝卜凯撒沙拉','Salad Caesar Tuna & Lobak Putih'),price:128000},
+    {num:3,names:N('きゅうり浅漬け','Dưa leo ngâm Asatsuke','Quick-Pickled Cucumber (Asazuke)','오이 아사즈케','小黃瓜淺漬','黄瓜浅渍','Timun Jeruk Ringkas Jepun'),price:48000},
+    {num:4,names:N('納豆冷奴','Đậu hủ lạnh natto','Cold Tofu with Natto','냉두부 낫토 곁들임','納豆冷豆腐','纳豆冷豆腐','Tauhu Sejuk dengan Natto'),price:58000},
+    {num:5,names:N('塩辛明太子','Trứng cá tuyết ngâm muối','Salted Cod Roe (Mentaiko)','멘타이코','鹽漬明太子','盐渍明太子','Telur Ikan Kod Berperisa Pedas (Mentaiko)'),price:128000},
+    {num:6,names:N('焼き茄子お浸し','Cà tím nướng','Marinated Grilled Eggplant','가지 오히타시','烤茄子浸汁','烤茄子浸汁','Terung Bakar Berkuah Sejuk'),price:98000},
+    {num:7,names:N('鴨たたき','Ức vịt hầm chậm','Seared Duck Tataki','오리 타타키','鴨肉炙燒','鸭肉炙烤','Daging Itik Bakar Sengat (Tataki)'),price:128000},
+    {num:8,names:N('コーンバター','Bắp xào bơ','Butter Corn','버터 옥수수','奶油玉米','奶油玉米','Jagung Mentega'),price:68000},
+    {num:9,names:N('アスパラバター','Măng tây Đà Lạt xào bơ','Butter Asparagus','버터 아스파라거스','奶油蘆筍','奶油芦笋','Asparagus Mentega'),price:98000}
+  ],
+  fried:[
+    {num:10,names:N('じゃがバター塩辛','Khoai tây mắm mực','Butter Potato with Salted Squid','버터 감자와 오징어젓','奶油馬鈴薯配鹽漬魷魚','奶油马铃薯配盐渍鱿鱼','Kentang Mentega dengan Sotong Masin'),price:98000},
+    {num:11,names:N('若鶏ザンギ','Gà chiên Zangi','Hokkaido-Style Fried Chicken (Zangi)','홋카이도식 자칭이 치킨','北海道炸雞 (Zangi)','北海道炸鸡 (Zangi)','Ayam Goreng Gaya Hokkaido (Zangi)'),price:98000},
+    {num:12,names:N('たこザンギ','Bạch tuộc chiên giòn','Crispy Fried Octopus (Zangi)','문어 자칭이','章魚炸物 (Zangi)','章鱼炸物 (Zangi)','Gurita Goreng Rangup (Zangi)'),price:118000},
+    {num:13,names:N('塩ホルモン炒め','Lòng non cháy tỏi','Garlic Salt-Fried Beef Offal','마늘 소금 호르몬 볶음','蒜香鹽炒牛雜','蒜香盐炒牛杂','Jeroan Lembu Goreng Garam Bawang Putih'),price:128000}
+  ],
+  grilled:[
+    {num:14,names:N('子持ちしゃも','Cá trứng nướng','Grilled Shishamo with Roe','알 들어간 시샤모 구이','烤柳葉魚(帶卵)','烤柳叶鱼(带卵)','Ikan Shishamo Bakar Bertelur'),price:128000},
+    {num:15,names:N('石狩のちゃんちゃん焼き','Cá hồi nướng Miso bơ','Ishikari-Style Salmon Miso-Butter Grill','이시카리식 연어 미소버터 구이','石狩鮭魚味噌奶油燒','石狩鲑鱼味噌奶油烤','Salmon Bakar Miso Mentega Gaya Ishikari'),price:158000},
+    {num:16,names:N('北寄貝醤油バター焼き','Sò đỏ nướng than/1 con','Hokkigai Surf Clam, Soy-Butter Grilled','홋키가이 간장버터구이','北寄貝醬油奶油燒','北寄贝酱油奶油烤','Kerang Hokkigai Bakar Kicap Mentega'),price:158000},
+    {num:17,names:N('名物ジンギスカン','Thịt cừu xào Ghengiskhan','Genghis Khan Grilled Lamb (Specialty)','명물 징기스칸','招牌成吉思汗烤羊肉','招牌成吉思汗烤羊肉','Daging Kambing Bakar Genghis Khan (Istimewa)'),price:198000},
+    {num:18,names:N('羅臼の真ほっけ炭火焼き','Cá Hokke 1 nắng','Rausu Hokke Mackerel, Charcoal-Grilled','라우스 홋케 숯불구이','羅臼花魚炭火燒','罗臼花鱼炭火烤','Ikan Hokke Rausu Bakar Arang'),price:218000}
+  ],
+  riceNoodle:[
+    {num:19,names:N('帯広名物！豚丼','Cơm thịt heo áp chảo','Obihiro Specialty! Pork Rice Bowl','오비히로 명물! 돈부리','帶廣名物！豬肉蓋飯','带广名物！猪肉盖饭','Istimewa Obihiro! Nasi Daging Khinzir'),price:158000},
+    {num:20,names:N('札幌チキンスープカレー','Sapporo soup curry đùi gà','Sapporo Chicken Soup Curry','삿포로 치킨 스프카레','札幌雞肉湯咖哩','札幌鸡肉汤咖喱','Kari Sup Ayam Gaya Sapporo'),price:218000},
+    {num:21,names:N('根室！エスカロップ','Cơm bò tỏi heo chiên xù','Nemuro Specialty! Escalope Rice','네무로 명물! 에스카롭','根室名物！炸豬排飯','根室名物！炸猪排饭','Istimewa Nemuro! Nasi Escalope'),price:218000},
+    {num:22,names:N('レギュラーバーグディッシュ','Cơm dĩa bò Hamburg','Hamburg Steak Rice Plate','함박스테이크 라이스 플레이트','漢堡排定食','汉堡排套餐','Pinggan Nasi Hamburg Steak'),price:198000},
+    {num:23,names:N('北海道味噌ラーメン','Mì Ramen Miso Hokkaido','Hokkaido Miso Ramen','홋카이도 미소 라멘','北海道味噌拉麵','北海道味噌拉面','Ramen Miso Hokkaido'),price:148000},
+    {num:24,names:N('鰹節塩昆布おにぎり','Cơm nắm cá ngừ bào tảo muối','Bonito Flake & Salted Kelp Onigiri','가츠오부시 소금다시마 오니기리','柴魚鹽昆布飯糰','柴鱼盐昆布饭团','Onigiri Serpihan Bonito & Kelp Garam'),price:68000},
+    {num:25,names:N('帆立炊き込み焼きおにぎり','Cơm nắm sò điệp nướng','Grilled Scallop Takikomi Onigiri','가리비 다키코미 구운 오니기리','烤帆立貝炊飯飯糰','烤扇贝炊饭饭团','Onigiri Bakar Nasi Kukus Skalop'),price:98000}
+  ],
+  oden:{
+    items:[
+      {names:N('大根','Củ cải trắng','Daikon Radish','다이콘 무','蘿蔔','萝卜','Lobak Putih'),price:23000},
+      {names:N('厚揚げ豆腐','Đậu hủ chiên','Fried Tofu (Atsuage)','두꺼운 튀김 두부','厚炸豆腐','厚炸豆腐','Tauhu Goreng Tebal (Atsuage)'),price:23000},
+      {names:N('玉子','Trứng gà','Egg','계란','雞蛋','鸡蛋','Telur'),price:23000},
+      {names:N('こんにゃく','Đậu nưa','Konjac','곤약','蒟蒻','蒟蒻','Konyaku'),price:23000},
+      {names:N('しらたき結','Bún nưa Musubi','Shirataki Knot','시라타키 매듬','白滝結','白滝结','Ikatan Shirataki'),price:23000},
+      {names:N('だし薫椎茸','Nấm đông cô Đà Lạt','Dashi-Infused Shiitake Mushroom','다시 향 표고버섯','高湯香菇','高汤香菇','Cendawan Shiitake Berperisa Dashi'),price:28000},
+      {names:N('ちくわ','Chả cá Chikuwa','Chikuwa Fish Cake','치쿠와','竹輪魚板','竹轮鱼板','Kek Ikan Chikuwa'),price:28000},
+      {names:N('なると巻き','Chả cá Naruto','Naruto Fish Roll','나루토마키','鳴門卷魚板','鸣门卷鱼板','Gulungan Ikan Naruto'),price:28000},
+      {names:N('もち巾着','Túi nhân mochi','Mochi Rice Cake Pouch','모찌 주머니','麻糬豆皮袋','麻糬豆皮袋','Beg Tauhu Berisi Mochi'),price:28000},
+      {names:N('はんぺん','Chả cá Hanpen','Hanpen Fish Cake','한펜','半片魚板','半片鱼板','Kek Ikan Hanpen'),price:28000},
+      {names:N('ソーセージ','Xúc xích heo','Sausage','소세지','香腸','香肠','Sosej'),price:38000},
+      {names:N('自家製つくね','Thịt viên Tsukune','Homemade Tsukune (Chicken Meatball)','수제 츠쿠네','自家製雞肉丸','自制鸡肉丸(つくね)','Bebola Ayam Buatan Sendiri (Tsukune)'),price:38000},
+      {names:N('牛タン','Xiên lưỡi bò','Beef Tongue','우설','牛舌','牛舌','Lidah Lembu'),price:48000},
+      {names:N('海老真丈','Tôm viên chiên','Shrimp Ball','새우 완자','蝦丸','虾丸','Bebola Udang'),price:48000},
+      {names:N('自家製さつま揚げ','Chả cá thác lác kiểu Nhật','Homemade Satsuma-age (Fried Fish Cake)','수제 사쓰마아게','自家製薩摩炸魚餅','自制萨摩炸鱼饼','Kek Ikan Goreng Buatan Sendiri (Satsuma-age)'),price:48000},
+      {names:N('つぶ貝','Xiên ốc xoắn Hokkaido','Hokkaido Whelk (Tsubugai)','홋카이도 쓰부가이','北海道蝾螺','北海道蝾螺','Siput Whelk Hokkaido'),price:58000},
+      {names:N('手巻きロールキャベツ','Bắp cải cuộn thịt','Hand-Rolled Cabbage Roll','손말이 양배추롤','手捲高麗菜捲','手卷卷心菜卷','Gulungan Kobis Buatan Tangan'),price:58000}
+    ],
+    set:{names:N('おでん7点盛り合わせ','Oden tổng hợp 7 loại','Oden 7-Piece Assortment','오뎅 7종 모음','關東煮七種拼盤','关东煮七种拼盘','Set Campuran Oden 7 Jenis'),price:218000}
+  },
+  drinks:{
+    beer:[
+      {names:N('サッポロ','Sapporo','Sapporo','삿포로','SAPPORO','SAPPORO','Sapporo'),price:58000}
+    ],
+    whisky:[
+      {names:N('角（サントリー角瓶）ハイボール','Highball Kaku (Suntory Kakubin)','Kaku Highball (Suntory Kakubin)','가쿠 하이볼','角瓶高球','角瓶高球','Highball Kaku (Suntory Kakubin)'),price:108000,priceBottle:1180000},
+      {names:N('ジェムソン','Jameson','Jameson','제임슨','Jameson','Jameson','Jameson'),price:98000,priceBottle:980000},
+      {names:N('ジムビーム','Jim Beam','Jim Beam','짐빔','Jim Beam','Jim Beam','Jim Beam'),price:88000,priceBottle:880000}
+    ],
+    sour:[
+      {names:N('生搾りレモンサワー','Sour chanh vắt tươi','Freshly Squeezed Lemon Sour','생레몬 사와','鮮榨檸檬沙瓦','鲜榨柠檬沙瓦','Sour Lemon Perahan Segar'),price:98000},
+      {names:N('ライムサワー','Sour chanh xanh','Lime Sour','라임 사와','青檬沙瓦','青柠沙瓦','Sour Limau Nipis'),price:78000},
+      {names:N('完熟梅酒サワー','Sour rượu mơ chín','Ripe Plum Wine Sour','잘 익은 매실주 사와','熟梅酒沙瓦','熟梅酒沙瓦','Sour Wain Plum Masak'),price:78000},
+      {names:N('柚子酒サワー','Sour rượu yuzu','Yuzu Wine Sour','유자주 사와','柚子酒沙瓦','柚子酒沙瓦','Sour Wain Yuzu'),price:78000}
+    ],
+    teaCocktail:[
+      {names:N('烏龍茶ハイボール（焼酎×烏龍茶）','Highball trà Oolong (Shochu pha trà Oolong)','Oolong Highball (Shochu with Oolong Tea)','우롱차 하이볼','烏龍茶高球(燒酎+烏龍茶)','乌龙茶高球(烧酒+乌龙茶)','Highball Teh Oolong (Shochu dengan Teh Oolong)'),price:78000},
+      {names:N('緑茶ハイボール（焼酎×ジャスミン緑茶）','Highball trà xanh (Shochu pha trà xanh hoa lài)','Green Tea Highball (Shochu with Jasmine Green Tea)','녹차 하이볼','綠茶高球(燒酎+茉莉綠茶)','绿茶高球(烧酒+茉莉绿茶)','Highball Teh Hijau (Shochu dengan Teh Hijau Melur)'),price:78000},
+      {names:N('北海道コーン茶ハイボール（焼酎×コーン茶）','Highball trà bắp Hokkaido (Shochu pha trà bắp)','Hokkaido Corn Tea Highball (Shochu with Corn Tea)','홋카이도 콘티 하이볼','北海道玉米茶高球(燒酎+玉米茶)','北海道玉米茶高球(烧酒+玉米茶)','Highball Teh Jagung Hokkaido (Shochu dengan Teh Jagung)'),price:78000}
+    ],
+    shochu:[
+      {names:N('麦焼酎 いいちこ','Shochu lúa mạch Iichiko','Barley Shochu: Iichiko','보리소주 이이치코','麥燒酎 いいちこ','麦烧酒 いいちこ','Shochu Barli Iichiko'),price:88000,priceBottle:880000},
+      {names:N('芋焼酎 黒霧島','Shochu khoai lang Kuro Kirishima','Potato Shochu: Kuro Kirishima','고구마소주 쿠로키리시마','芋燒酎 黑霧島','芋烧酒 黑雾岛','Shochu Ubi Kuro Kirishima'),price:88000,priceBottle:880000},
+      {names:N('麦焼酎 なかなか','Shochu lúa mạch Naka Naka','Barley Shochu: Naka Naka','보리소주 나카나카','麥燒酎 なかなか','麦烧酒 なかなか','Shochu Barli Naka Naka'),price:108000,priceBottle:1108000}
+    ],
+    sake:[
+      {names:N('男山 純米','Rượu sake Otokoyama Junmai','Otokoyama Junmai','오토코야마 준마이','男山 純米酒','男山 纯米酒','Sake Otokoyama Junmai'),price:298000,priceBottle:980000},
+      {names:N('七賢 純米大吟醸','Rượu sake Shichiken Junmai Daiginjo','Shichiken Junmai Daiginjo','시치켄 준마이다이긴조','七賢 純米大吟釀','七贤 纯米大吟酿','Sake Shichiken Junmai Daiginjo'),price:380000,priceBottle:1480000},
+      {names:N('出汁割り日本酒','Sake pha dashi','Dashi-Mixed Sake','다시와리 사케','高湯調和日本酒','高汤调和日本酒','Sake Bercampur Dashi'),price:148000}
+    ],
+    softDrink:[
+      {names:N('烏龍茶','Trà Oolong','Oolong Tea','우롱차','烏龍茶','乌龙茶','Teh Oolong'),price:38000},
+      {names:N('緑茶','Trà xanh','Green Tea','녹차','綠茶','绿茶','Teh Hijau'),price:38000},
+      {names:N('北海道コーン茶','Trà bắp Hokkaido','Hokkaido Corn Tea','홋카이도 콘티','北海道玉米茶','北海道玉米茶','Teh Jagung Hokkaido'),price:38000},
+      {names:N('グァバジュース','Nước ổi','Guava Juice','구아바주스','芭樂汁','番石榴汁','Jus Jambu Batu'),price:38000},
+      {names:N('コカコーラ','Coca Cola','Coca Cola','코카콜라','可口可樂','可口可乐','Coca Cola'),price:38000},
+      {names:N('強炭酸水','Nước soda mạnh','Strong Soda Water','강탄산수','強氣泡水','强气泡水','Air Soda Kuat'),price:38000}
+    ]
+  }
+};
+
+const CATS = ['starters','fried','grilled','riceNoodle','oden','drinks'];
+let currentLang = 'ja';
+let currentCat = 'starters';
+let mascotDataUrl = null;
+let uidCounter = 0;
+const itemsByUid = {};
+
+function buildIndex(){
+  ['starters','fried','grilled','riceNoodle'].forEach(k=>{
+    DATA[k].forEach(it=>{ it.uid = uidCounter++; itemsByUid[it.uid]=it; });
+  });
+  DATA.oden.items.forEach(it=>{ it.uid = uidCounter++; itemsByUid[it.uid]=it; });
+  DATA.oden.set.uid = uidCounter++; itemsByUid[DATA.oden.set.uid]=DATA.oden.set;
+  Object.keys(DATA.drinks).forEach(k=>{
+    DATA.drinks[k].forEach(it=>{ it.uid = uidCounter++; itemsByUid[it.uid]=it; });
+  });
+}
+buildIndex();
+
+function fmt(n){ return n.toLocaleString('en-US') + '₫'; }
+
+function photoSlotHtml(item){
+  const img = item.photo ? `<img src="${item.photo}">` : '📷';
+  return `<label class="photo-slot"><span class="photo-fallback">${item.photo?'':img}</span>${item.photo?img:''}<input type="file" accept="image/*" class="photo-input" data-uid="${item.uid}"></label>`;
+}
+
+function itemRow(item, lang){
+  const name = item.names[lang] || item.names.en;
+  const jp = lang!=='ja' ? `<p class="item-jp">${item.names.ja}</p>` : '';
+  const numBadge = item.num ? `<span class="num-badge">${item.num}</span>` : '';
+  let priceHtml;
+  if(item.priceBottle){
+    priceHtml = `<span class="price-row-label">${UI[lang].glass}</span> ${fmt(item.price)}<span class="price-bottle">${UI[lang].bottle} ${fmt(item.priceBottle)}</span>`;
+  } else {
+    priceHtml = fmt(item.price);
+  }
+  return `<div class="item">${photoSlotHtml(item)}<div class="item-main"><p class="item-name">${numBadge}${name}</p>${jp}</div><div class="item-price">${priceHtml}</div></div>`;
+}
+
+function renderSimpleList(items, lang){
+  return items.map(it => itemRow(it, lang)).join('');
+}
+
+function mascotMiniHtml(){
+  return mascotDataUrl ? `<img class="mascot-mini" src="${mascotDataUrl}">` : `<span class="mascot-mini-fallback">🐻</span>`;
+}
+
+function renderOden(lang){
+  const u = UI[lang];
+  const broth = `
+    <div class="broth-card">
+      <h3>${u.brothTitle}</h3>
+      <p>${u.brothBody}</p>
+      <span class="today-badge">${u.todaysBrothLabel}</span>
+      <p class="today-name">${u.todaysBrothName}</p>
+      <p style="margin-bottom:0;">${u.todaysBrothNote}</p>
+    </div>`;
+  const list = renderSimpleList(DATA.oden.items, lang);
+  const setItem = DATA.oden.set;
+  const setName = setItem.names[lang] || setItem.names.en;
+  const setPhoto = setItem.photo ? `<img src="${setItem.photo}">` : '🍱';
+  const setCard = `
+    <div class="set-card">
+      <label class="photo-slot">${setItem.photo?'':setPhoto}${setItem.photo?setPhoto:''}<input type="file" accept="image/*" class="photo-input" data-uid="${setItem.uid}"></label>
+      <div style="flex:1;margin:0 10px;">
+        <p class="set-label">${u.setLabel}</p>
+        <p class="item-name" style="margin:0;">${setName}</p>
+      </div>
+      <div class="item-price">${fmt(setItem.price)}</div>
+    </div>`;
+  return broth + list + setCard;
+}
+
+function renderDrinks(lang){
+  const u = UI[lang];
+  const order = [['beer','sub_beer'],['whisky','sub_whisky'],['sour','sub_sour'],['teaCocktail','sub_teaCocktail'],['shochu','sub_shochu'],['sake','sub_sake'],['softDrink','sub_softDrink']];
+  return order.map(([key,labelKey]) => {
+    return `<p class="sub-title">${u[labelKey]}</p>` + renderSimpleList(DATA.drinks[key], lang);
+  }).join('');
+}
+
+function renderCategoryBody(cat, lang){
+  if(cat==='oden') return renderOden(lang);
+  if(cat==='drinks') return renderDrinks(lang);
+  return renderSimpleList(DATA[cat], lang);
+}
+
+function render(){
+  const u = UI[currentLang];
+  document.documentElement.lang = currentLang;
+  document.body.className = 'lang-' + currentLang;
+  document.getElementById('tagline').textContent = u.tagline;
+  document.getElementById('footAddrLabel').textContent = u.address;
+  document.getElementById('footHotlineLabel').textContent = u.hotline;
+  document.getElementById('footNote').textContent = u.footerNote;
+
+  const langRow = document.getElementById('langRow');
+  langRow.innerHTML = LANGS.map(l => `<button class="lang-tab${l.code===currentLang?' active':''}" data-lang="${l.code}">${l.label}</button>`).join('');
+  langRow.querySelectorAll('.lang-tab').forEach(btn => {
+    btn.addEventListener('click', () => { currentLang = btn.dataset.lang; render(); });
+  });
+
+  const catRow = document.getElementById('catRow');
+  catRow.innerHTML = CATS.map(c => `<button class="cat-tab${c===currentCat?' active':''}" data-cat="${c}">${u['cat_'+c]}</button>`).join('');
+  catRow.querySelectorAll('.cat-tab').forEach(btn => {
+    btn.addEventListener('click', () => { currentCat = btn.dataset.cat; render(); });
+  });
+
+  const main = document.getElementById('main');
+  main.innerHTML = `<h2 class="section-title">${mascotMiniHtml()}${u['cat_'+currentCat]}</h2>` + renderCategoryBody(currentCat, currentLang);
+
+  main.querySelectorAll('.photo-input').forEach(input=>{
+    input.addEventListener('change', e=>{
+      const file = e.target.files[0];
+      if(!file) return;
+      const uid = parseInt(e.target.dataset.uid,10);
+      const reader = new FileReader();
+      reader.onload = ()=>{
+        itemsByUid[uid].photo = reader.result;
+        render();
+      };
+      reader.readAsDataURL(file);
+    });
+  });
+}
+
+document.getElementById('mascotInput').addEventListener('change', e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    mascotDataUrl = reader.result;
+    document.getElementById('mascotFallback').outerHTML = `<img src="${mascotDataUrl}">`;
+    render();
+  };
+  reader.readAsDataURL(file);
+});
+
+render();
+</script>
+</body>
+</html>
