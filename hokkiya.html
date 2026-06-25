@@ -208,6 +208,13 @@
     color:var(--koge);
   }
   .review-block{text-align:center;padding:0 4px;}
+  .review-cta-box{
+    border:2px solid var(--enji);
+    border-radius:20px;
+    padding:18px 16px 20px;
+    margin-bottom:16px;
+  }
+  .review-cta-box .stars{margin:0 0 14px;}
   .review-cta-lead{
     font-size:13.5px;
     line-height:1.7;
@@ -218,6 +225,71 @@
     border-radius:12px;
     text-align:left;
   }
+
+  /* ===== SAKEページ ===== */
+  .sake-page{padding:12px 10px 32px;}
+  .sake-catch-main{
+    font-size:14.5px;
+    line-height:1.8;
+    text-align:center;
+    padding:16px 14px;
+    background:var(--enji);
+    color:#f4e3c1;
+    border-radius:14px;
+    margin:0 0 20px;
+    font-weight:600;
+  }
+  .sake-cards{display:flex;flex-direction:column;gap:18px;margin-bottom:28px;}
+  .sake-card{
+    background:#fff;
+    border-radius:18px;
+    overflow:hidden;
+    box-shadow:0 3px 12px rgba(62,42,28,.10);
+  }
+  .sake-card-img-wrap{
+    width:100%;height:200px;
+    background:var(--cream-dim);
+    display:flex;align-items:center;justify-content:center;
+    overflow:hidden;font-size:60px;
+  }
+  .sake-card-img{width:100%;height:100%;object-fit:cover;object-position:center top;}
+  .sake-card-body{padding:16px 16px 18px;}
+  .sake-label{
+    display:inline-block;
+    background:var(--enji);color:#fff;
+    font-size:10px;font-weight:700;
+    padding:3px 10px;border-radius:999px;margin-bottom:8px;
+  }
+  .sake-name{font-size:17px;font-weight:700;color:var(--koge);margin:0 0 6px;}
+  .sake-catch{font-size:13px;font-weight:700;color:var(--enji);margin:0 0 10px;line-height:1.5;}
+  .sake-desc{font-size:13px;line-height:1.75;color:var(--koge-soft);margin:0 0 14px;}
+  .sake-params{display:flex;flex-direction:column;gap:6px;}
+  .sake-param{
+    display:flex;align-items:center;justify-content:space-between;
+    background:var(--cream);border-radius:8px;padding:6px 12px;
+  }
+  .sake-param-label{font-size:12px;font-weight:700;color:var(--koge);}
+  .sake-param-stars{font-size:15px;color:#c8a000;letter-spacing:2px;}
+  .sake-serving-section{
+    background:#fff;border-radius:18px;
+    padding:20px 16px 22px;
+    box-shadow:0 3px 12px rgba(62,42,28,.08);
+    margin-bottom:24px;
+  }
+  .sake-serving-heading{font-size:15px;font-weight:700;color:var(--enji);margin:0 0 10px;line-height:1.5;}
+  .sake-dashi-heading{margin-top:24px;}
+  .sake-serving-desc{font-size:13.5px;line-height:1.8;color:var(--koge);margin:0 0 12px;}
+  .sake-tip{
+    font-size:12px;line-height:1.7;color:var(--koge-soft);
+    background:var(--cream-dim);border-radius:10px;padding:10px 12px;margin-bottom:4px;
+  }
+  .sake-story-inner{
+    background:var(--cream);border:1.5px solid #d4b896;
+    border-radius:18px;padding:22px 18px;text-align:center;
+  }
+  .sake-story-deco{font-size:36px;display:block;margin-bottom:10px;}
+  .sake-story-title{font-size:15px;font-weight:700;color:var(--enji);margin:0 0 14px;line-height:1.5;}
+  .sake-story-desc{font-size:13px;line-height:1.85;color:var(--koge);margin:0;text-align:left;}
 
   .coming-soon{
     display:flex;
@@ -678,7 +750,7 @@ function fmt(n){ return n.toLocaleString('en-US') + '₫'; }
 
 function photoSlotHtml(item){
   const img = item.photo ? `<img src="${item.photo}">` : '📷';
-  return `<label class="photo-slot"><span class="photo-fallback">${item.photo?'':img}</span>${item.photo?img:''}<input type="file" accept="image/*" class="photo-input" data-uid="${item.uid}"></label>`;
+  return `<div class="photo-slot">${item.photo ? img : `<span class="photo-fallback">${img}</span>`}</div>`;
 }
 
 function itemRow(item, lang, showPhoto){
@@ -717,7 +789,7 @@ function renderOden(lang){
   const setPhoto = setItem.photo ? `<img src="${setItem.photo}">` : '🍱';
   const setCard = `
     <div class="set-card">
-      <label class="photo-slot">${setItem.photo?'':setPhoto}${setItem.photo?setPhoto:''}<input type="file" accept="image/*" class="photo-input" data-uid="${setItem.uid}"></label>
+      <div class="photo-slot">${setItem.photo ? setPhoto : setPhoto}</div>
       <div style="flex:1;margin:0 10px;">
         <p class="set-label">${u.setLabel}</p>
         <p class="item-name" style="margin:0;">${setName}</p>
@@ -795,9 +867,11 @@ function renderAboutPage(lang){
     </div>
 
     <div class="review-block">
-      <p class="stars">⭐️⭐️⭐️⭐️⭐️</p>
       <p class="review-cta-lead">${u.reviewCtaSub}</p>
-      <a class="cta-button" href="${GOOGLE_REVIEW_URL}" target="_blank" rel="noopener">${u.reviewCtaLabel}</a>
+      <div class="review-cta-box">
+        <p class="stars">⭐️⭐️⭐️⭐️⭐️</p>
+        <a class="cta-button" href="${GOOGLE_REVIEW_URL}" target="_blank" rel="noopener">${u.reviewCtaLabel}</a>
+      </div>
       <div class="thanks-card">
         <span class="thanks-icon">🍢</span>
         <p>${u.reviewThanksNote}</p>
@@ -807,19 +881,180 @@ function renderAboutPage(lang){
 }
 
 function renderComingSoon(lang, page){
+  if(page === 'sake') return renderSakePage(lang);
   const u = UI[lang];
-  const icon = page === 'sake' ? '🍶' : '📣';
-  const title = page === 'sake' ? u.page_sake : u.page_information;
-  const body = page === 'sake' ? u.comingSoonSake : u.comingSoonInfo;
   return `
     <section class="cat-section coming-soon">
       <div class="coming-soon-card">
-        <span class="coming-soon-icon">${icon}</span>
-        <h2 class="coming-soon-heading">${title}</h2>
+        <span class="coming-soon-icon">📣</span>
+        <h2 class="coming-soon-heading">${u.page_information}</h2>
         <p class="coming-soon-badge">${u.comingSoonTitle}</p>
-        <p class="coming-soon-body">${body}</p>
+        <p class="coming-soon-body">${u.comingSoonInfo}</p>
       </div>
     </section>`;
+}
+
+/* ===== SAKE ページ ===== */
+const SAKE_DATA = [
+  {
+    id:'otoko',
+    photo:'image_2.png',
+    label:'純米酒',
+    name:'甲斐の地酒 男山',
+    catch:{
+      ja:'スッキリ爽快！北海道の味に最も寄り添う辛口',
+      vi:'Sảng khoái & thanh! Rượu khô hoàn hảo với ẩm thực Hokkaido',
+      en:'Crisp & Clean! The Dry Sake That Pairs Best with Hokkaido Cuisine',
+      ko:'상쾌하고 깔끔! 홋카이도 요리에 최고로 어울리는 드라이 사케',
+      'zh-Hant':'清爽暢快！最適合搭配北海道料理的辛口',
+      'zh-Hans':'清爽畅快！最适合搭配北海道料理的辛口',
+      ms:'Segar & Bersih! Sake Kering Terbaik untuk Masakan Hokkaido',
+    },
+    desc:{
+      ja:'北海道といえば「男山」が有名ですが、こちらは山梨の「男山」。米の旨味がしっかりありながら、後味は驚くほどキレ味がよくスッキリ！ジンギスカンや海鮮など、脂の乗ったお料理の美味しさをグッと引き立ててくれる、最初の一杯に迷ったらこれ！という王道の辛口純米酒です。',
+      en:'Known in Hokkaido for a famous namesake, this "Otokoyama" is from Yamanashi. Rich rice umami with an astonishingly clean finish — perfect with Genghis Khan or seafood. The go-to dry sake when you\'re not sure what to order.',
+      vi:'Tên "Otokoyama" nổi tiếng ở Hokkaido, nhưng đây là phiên bản từ Yamanashi. Vị umami gạo đậm đà, hậu vị trong trẻo bất ngờ. Hoàn hảo với Jingisukan hay hải sản.',
+      ko:'홋카이도의 "오토코야마"가 유명하지만, 이것은 야마나시의 "오토코야마"입니다. 쌀의 감칠맛이 풍부하면서도 뒷맛은 놀랍도록 깔끔합니다.',
+      'zh-Hant':'北海道「男山」聞名，但這款來自山梨。米的旨味扎實，餘韻出乎意料地清爽。最適合搭配成吉思汗烤肉或海鮮。',
+      'zh-Hans':'北海道"男山"闻名，但这款来自山梨。米的旨味扎实，余韵出乎意料地清爽。最适合搭配成吉思汗烤肉或海鲜。',
+      ms:'Dikenali sebagai "Otokoyama" di Hokkaido, ini adalah versi dari Yamanashi. Umami beras yang kaya dengan kemasan bersih — sempurna dengan Jingisukan atau makanan laut.',
+    },
+    params:[
+      {label:{ja:'キレ',en:'Dryness',vi:'Độ khô',ko:'드라이',    'zh-Hant':'爽口度','zh-Hans':'爽口度',ms:'Kering'}, stars:5},
+      {label:{ja:'フルーティー',en:'Fruity',vi:'Trái cây',ko:'과일향','zh-Hant':'果香','zh-Hans':'果香',ms:'Buahan'}, stars:2},
+    ],
+  },
+  {
+    id:'shichiken',
+    photo:'image_3.png',
+    label:'純米大吟醸',
+    name:'七賢 絹の味',
+    catch:{
+      ja:'まるで絹のよう。フルーティーで贅沢な最高峰の一杯',
+      vi:'Mềm như lụa — một ly sake thuần mỹ đỉnh cao đầy hương trái cây',
+      en:'Smooth as Silk — A Fruity, Luxurious Daiginjo Experience',
+      ko:'비단처럼 부드럽다. 최고급 다이긴조의 과일향 풍미',
+      'zh-Hant':'猶如絲綢般柔順，果香馥郁的頂級純米大吟釀',
+      'zh-Hans':'犹如丝绸般柔顺，果香馥郁的顶级纯米大吟酿',
+      ms:'Lembut Seperti Sutera — Pengalaman Daiginjo Buahan yang Mewah',
+    },
+    desc:{
+      ja:'白州の名水で仕込まれた、その名の通り「絹のように滑らか」で華やかな純米大吟醸です。口に含んだ瞬間に広がるフルーティーな香りと、上品で優しい甘みはまさに贅沢そのもの。日本酒を飲み慣れていない方や、女性にも大人気のお酒です。',
+      en:'Brewed with the pure waters of Hakushu, this Daiginjo is silky smooth and fragrant — just as its name suggests. Fruity aromas bloom instantly; the gentle sweetness is pure luxury. A favourite among beginners and wine lovers.',
+      vi:'Được ủ với nước tinh khiết Hakushu, sake này mượt mà và thơm như tơ lụa. Hương trái cây nở ngay khi uống; vị ngọt nhẹ nhàng như hưởng thụ xa xỉ. Rất được ưa thích bởi người mới uống.',
+      ko:'하쿠슈의 맑은 물로 빚은, 이름 그대로 "비단처럼 부드럽고" 화려한 순미대긴조입니다. 처음 입에 닿는 순간 퍼지는 과일향과 우아한 단맛은 사치 그 자체입니다.',
+      'zh-Hant':'以白州名水釀造，名如其實「絲滑柔順」且香氣馥郁的純米大吟釀。入口瞬間綻放果香，優雅的甜味是純粹的奢華享受，深受初學者及女性喜愛。',
+      'zh-Hans':'以白州名水酿造，名如其实"丝滑柔顺"且香气馥郁的纯米大吟酿。入口瞬间绽放果香，优雅的甜味是纯粹的奢华享受，深受初学者及女性喜爱。',
+      ms:'Dibrui dengan air tulen Hakushu, sake ini lembut dan wangi seperti sutera. Aroma buahan mekar serta-merta; kemanisan lembutnya adalah kemewahan tulen. Kegemaran pemula dan pencinta wain.',
+    },
+    params:[
+      {label:{ja:'フルーティー',en:'Fruity',vi:'Trái cây',ko:'과일향','zh-Hant':'果香','zh-Hans':'果香',ms:'Buahan'}, stars:5},
+      {label:{ja:'飲みやすさ',en:'Easy to Drink',vi:'Dễ uống',ko:'마시기 쉬움','zh-Hant':'易飲度','zh-Hans':'易饮度',ms:'Mudah Minum'}, stars:5},
+    ],
+  },
+  {
+    id:'taikan',
+    photo:'image.png',
+    label:'普通酒',
+    name:'大冠（たいかん）',
+    catch:{
+      ja:'おでんの相棒！出汁と溶け合う万能の旨口酒',
+      vi:'Người bạn đồng hành của Oden! Rượu umami hòa quyện hoàn hảo với nước dùng',
+      en:'The Perfect Oden Companion! An Umami Sake That Melds with the Broth',
+      ko:'오뎅의 단짝！국물과 어우러지는 만능 우마구치 사케',
+      'zh-Hant':'關東煮的最佳拍檔！與出汁完美融合的萬能旨口酒',
+      'zh-Hans':'关东煮的最佳拍档！与出汁完美融合的万能旨口酒',
+      ms:'Teman Setia Oden! Sake Umami yang Menyatu dengan Kuah',
+    },
+    desc:{
+      ja:'当店自慢の「熱々おでん」に合わせるために選んだ、糖類無添加で米本来の旨味が詰まったお酒です。おでんの大根やたまごと一緒に含むと、お米の優しい甘みがふんわりと膨らみ、最高のペアリングを楽しめます。こちらは【熱燗】や【出汁割り】でもお楽しみいただけます！',
+      en:'Chosen specifically to pair with our signature piping-hot oden, this no-added-sugar sake is packed with the natural umami of rice. Sip alongside daikon or egg and feel the gentle sweetness bloom. Also available as 熱燗 (Atsukan / warm) or 出汁割り (Dashi-Wari)!',
+      vi:'Được chọn đặc biệt để kết hợp với oden nóng hổi của chúng tôi, sake không thêm đường này chứa đầy umami tự nhiên của gạo. Nhấp cùng củ cải hoặc trứng và cảm nhận vị ngọt nhẹ nhàng nở ra.',
+      ko:'당점 자랑의 뜨거운 오뎅을 위해 엄선한, 무가당 쌀 본연의 감칠맛이 가득한 술입니다. 오뎅의 무나 달걀과 함께 마시면 쌀의 부드러운 단맛이 은은하게 퍼집니다.',
+      'zh-Hant':'專為搭配本店自豪的熱騰騰關東煮而選，這款無添加糖的酒充滿米的天然旨味。與蘿蔔或雞蛋同品，感受米的溫柔甜味徐徐綻放。也可享用熱燗或出汁割！',
+      'zh-Hans':'专为搭配本店自豪的热腾腾关东煮而选，这款无添加糖的酒充满米的天然旨味。与萝卜或鸡蛋同品，感受米的温柔甜味徐徐绽放。也可享用热燗或出汁割！',
+      ms:'Dipilih khusus untuk dipasangkan dengan oden panas kami, sake tanpa gula tambahan ini penuh dengan umami semula jadi beras. Teguk bersama daikon atau telur dan rasai kemanisan lembut mekar.',
+    },
+    params:[
+      {label:{ja:'コク',en:'Depth',vi:'Độ đậm',ko:'깊이감','zh-Hant':'醇厚度','zh-Hans':'醇厚度',ms:'Kedalaman'}, stars:5},
+      {label:{ja:'キレ',en:'Dryness',vi:'Độ khô',ko:'드라이','zh-Hant':'爽口度','zh-Hans':'爽口度',ms:'Kering'}, stars:3},
+    ],
+  },
+];
+
+const SAKE_CATCH = {
+  ja:'おでんと北海道料理を引き立てる、厳選の日本酒。今夜の一杯を見つけてみてください。',
+  vi:'Rượu Sake được tuyển chọn kỹ càng để tôn lên hương vị Oden và ẩm thực Hokkaido. Hãy tìm ly rượu cho tối nay.',
+  en:'Carefully selected sake to complement our oden and Hokkaido cuisine. Find your perfect pour for tonight.',
+  ko:'오뎅과 홋카이도 요리를 돋보이게 하는 엄선된 사케. 오늘 밤의 한 잔을 찾아보세요.',
+  'zh-Hant':'精心挑選的日本酒，完美襯托關東煮與北海道料理。為今晚找到屬於您的那一杯。',
+  'zh-Hans':'精心挑选的日本酒，完美衬托关东煮与北海道料理。为今晚找到属于您的那一杯。',
+  ms:'Sake pilihan teliti untuk melengkapi oden dan masakan Hokkaido kami. Temui tegukan sempurna anda untuk malam ini.',
+};
+
+const SAKE_SERVING = {
+  atsukan_title:{ja:'風情を感じる「熱燗（Atsukan）」',en:'Warm & Cosy: Atsukan (Heated Sake)',vi:'Thưởng thức "Atsukan" ấm áp',ko:'정취 넘치는 "아츠캉"（뜨겁게 데운 사케）','zh-Hant':'感受風情的「熱燗（Atsukan）」','zh-Hans':'感受风情的「热燗（Atsukan）」',ms:'"Atsukan" — Sake Hangat Penuh Suasana'},
+  atsukan_desc:{ja:'日本酒を温めることで、お米の旨味と香りがさらに引き立ちます。肌寒い夜や、熱々のおでんのお供に。芯からホッと温まる贅沢をどうぞ。ご希望の方はスタッフまでお気軽にお申し付けください。',en:'Warming sake deepens its rice umami and aroma. Perfect on a cool night alongside piping-hot oden. A luxury that warms you from the inside out — just ask your server!',vi:'Hâm nóng sake làm đậm thêm umami và hương vị gạo. Hoàn hảo vào đêm se lạnh bên cạnh oden nóng hổi. Hãy gọi cho nhân viên!',ko:'사케를 데우면 쌀의 감칠맛과 향이 더욱 진해집니다. 쌀쌀한 밤이나 뜨거운 오뎅과 함께하기에 완벽합니다. 스태프에게 말씀해 주세요!','zh-Hant':'加熱日本酒能使米的旨味與香氣更加突出。涼夜裡搭配熱騰騰的關東煮最是享受。請告知工作人員！','zh-Hans':'加热日本酒能使米的旨味与香气更加突出。凉夜里搭配热腾腾的关东煮最是享受。请告知工作人员！',ms:'Memanaskan sake memperdalam umami dan aroma berasnya. Sempurna pada malam sejuk bersama oden panas. Minta pelayan anda!'},
+  atsukan_tip:{ja:'💡 とっくり（徳利）とは？：日本酒を温めてキープするための、日本の伝統的な可愛い小瓶のことです。お連れ様同士で注ぎ合う居酒屋文化もお楽しみください。',en:'💡 What is a Tokkuri? A traditional Japanese ceramic flask used to warm and serve sake. Pouring for each other is a cherished izakaya custom!',vi:'💡 Tokkuri là gì? Một bình gốm truyền thống Nhật Bản dùng để hâm và rót sake. Rót cho nhau là nét văn hóa ấm áp của izakaya!',ko:'💡 도쿠리란? 사케를 데우고 제공하는 전통 일본 도자기 플라스크입니다. 서로에게 따라주는 이자카야 문화도 즐겨보세요!','zh-Hant':'💡 什麼是德利（Tokkuri）？用於溫熱和盛裝日本酒的日本傳統陶瓷小瓶。互相斟酒是居酒屋珍貴的文化習俗！','zh-Hans':'💡 什么是德利（Tokkuri）？用于温热和盛装日本酒的日本传统陶瓷小瓶。互相斟酒是居酒屋珍贵的文化习俗！',ms:'💡 Apakah Tokkuri? Kelalang seramik tradisional Jepun untuk memanaskan dan menghidangkan sake. Menuang untuk satu sama lain adalah adat izakaya yang indah!'},
+  dashi_title:{ja:'当店名物：レトロで粋な「出汁割り（Dashi-Wari）」',en:'House Specialty: Retro & Chic "Dashi-Wari"',vi:'Đặc sản quán: "Dashi-Wari" kiểu retro phong cách',ko:'가게 명물：레트로하고 멋진 "다시와리（Dashi-Wari）"','zh-Hant':'本店名物：復古有情調的「出汁割り（Dashi-Wari）」','zh-Hans':'本店名物：复古有情调的「出汁割り（Dashi-Wari）」',ms:'Keistimewaan Kedai: "Dashi-Wari" Retro & Bergaya'},
+  dashi_desc:{ja:'少し残したお酒に、当店自慢の「熱々のおでん出汁」を注いで味わう特別な飲み方です。出汁割り用の熱々スープは、日本の大衆酒場を感じる「レトロなワンカップ瓶」でそのままお渡しします！ご自身の好きな黄金比率で、お酒に出汁を注いでお楽しみください。出汁の旨味と日本酒のコクが合わさり、一度飲んだら止まらない美味しさです。ぜひ最後の締めにスタッフまでお声がけください！',en:'Pour our signature piping-hot oden dashi into your remaining sake and savour a truly special combination. The hot dashi arrives in a retro one-cup bottle straight from the Japanese working-class bar scene! Choose your own golden ratio and pour to taste. Umami-rich broth meets sake depth — once you try it, you won\'t stop. Ask your server for the perfect finish to your evening!',vi:'Rót nước dùng oden nóng hổi vào sake còn lại và thưởng thức sự kết hợp đặc biệt này. Nước dùng nóng được phục vụ trong chai "one-cup" retro đầy phong cách Nhật Bản! Tự điều chỉnh tỷ lệ theo sở thích. Umami từ dashi hòa quyện với độ đậm của sake. Gọi nhân viên để kết thúc bữa tối hoàn hảo!',ko:'조금 남긴 술에 당점 자랑의 뜨거운 오뎅 다시를 부어 즐기는 특별한 음용법입니다. 다시와리용 뜨거운 스프는 일본 대중주점 분위기의 "레트로 원컵 병"으로 그대로 제공됩니다! 좋아하는 비율로 다시를 부어 즐겨보세요.','zh-Hant':'將當店自豪的熱騰騰關東煮出汁注入剩餘的酒中，享受這特別的飲法。熱出汁以充滿日本大眾酒場感的「復古一合瓶」原樣奉上！按喜好調出黃金比例，旨味出汁與日本酒醇厚完美融合，喝過一次就停不下來。請在最後收尾時叫工作人員！','zh-Hans':'将当店自豪的热腾腾关东煮出汁注入剩余的酒中，享受这特别的饮法。热出汁以充满日本大众酒场感的「复古一合瓶」原样奉上！按喜好调出黄金比例，旨味出汁与日本酒醇厚完美融合，喝过一次就停不下来。请在最后收尾时叫工作人员！',ms:'Tuang dashi oden panas ke dalam sake yang tersisa dan nikmati gabungan istimewa ini. Dashi panas tiba dalam botol one-cup retro bergaya kedai rakyat Jepun! Pilih nisbah keemasan anda sendiri. Dashi kaya umami bertemu kedalaman sake. Minta pelayan anda untuk kemuncak malam yang sempurna!'},
+  story_title:{ja:'北寄やの日本酒が「山梨産」である理由',en:'Why Hokkiya Chooses Sake from Yamanashi',vi:'Tại sao Hokkiya chọn rượu Sake từ Yamanashi',ko:'홋키야의 사케가 「야마나시산」인 이유','zh-Hant':'為何北寄やの日本酒選自「山梨」','zh-Hans':'为何北寄や的日本酒选自「山梨」',ms:'Mengapa Hokkiya Memilih Sake dari Yamanashi'},
+  story_desc:{ja:'当店のベトナム人オーナーは、かつて日本で20年間という長い時間を過ごしました。その大切な日々の中で、最も深く心を結んだ「第二の故郷」、それが山梨県です。南アルプスの清らかな名水と豊かな自然にはぐくまれた山梨の地酒は、どれもお米の優しい旨味が詰まった傑作ばかり。オーナーが日本で愛し、感動した本物の味わいを、今度はここホーチミンで皆さまにお届けします。',en:'Our Vietnamese owner spent 20 precious years in Japan. Of all the places that shaped those days, Yamanashi Prefecture became a true "second home" — close to his heart. The local sake, nurtured by the pristine waters of the Southern Alps and abundant nature, are masterpieces of gentle rice umami. The authentic flavours he loved and cherished in Japan, he now brings to you here in Ho Chi Minh City.',vi:'Chủ người Việt của chúng tôi đã trải qua 20 năm quý giá tại Nhật Bản. Trong tất cả những nơi đã định hình những ngày đó, tỉnh Yamanashi trở thành "quê hương thứ hai" thật sự. Rượu địa phương, được nuôi dưỡng bởi nguồn nước tinh khiết của dãy Alps phía Nam, là những kiệt tác với umami gạo nhẹ nhàng. Những hương vị chân thực ông đã yêu thương tại Nhật Bản, nay ông mang đến cho quý khách tại TP. Hồ Chí Minh.',ko:'저희 베트남인 오너는 일본에서 20년이라는 소중한 시간을 보냈습니다. 그 소중한 날들 중 가장 깊이 마음에 새겨진 "제2의 고향", 그것이 야마나시현입니다. 남알프스의 맑은 명수와 풍요로운 자연에서 자란 야마나시의 지역 술은 모두 쌀의 부드러운 감칠맛이 가득한 걸작입니다.','zh-Hant':'本店的越南籍老闆曾在日本度過了珍貴的20年時光。在那重要的歲月中，最深深繫住心靈的「第二故鄉」，便是山梨縣。南阿爾卑斯山清澈名水與豐饒自然孕育的山梨地酒，每一款都是充滿米的溫柔旨味的傑作。老闆在日本深愛、為之感動的真實風味，如今在胡志明市與您共享。','zh-Hans':'本店的越南籍老板曾在日本度过了珍贵的20年时光。在那重要的岁月中，最深深系住心灵的"第二故乡"，便是山梨县。南阿尔卑斯山清澈名水与丰饶自然孕育的山梨地酒，每一款都是充满米的温柔旨味的杰作。老板在日本深爱、为之感动的真实风味，如今在胡志明市与您共享。',ms:'Pemilik Vietnam kami menghabiskan 20 tahun berharga di Jepun. Dari semua tempat yang membentuk hari-hari itu, Prefektur Yamanashi menjadi "tanah air kedua" yang sejati. Sake tempatan, dipelihara oleh air bersih Pergunungan Selatan, adalah mahakarya umami beras yang lembut. Cita rasa asli yang beliau cintai di Jepun, kini beliau bawakan kepada anda di Ho Chi Minh City.'},
+};
+
+function sakeStars(n, max=5){
+  return '★'.repeat(n) + '☆'.repeat(max-n);
+}
+
+function renderSakePage(lang){
+  const catch_ = SAKE_CATCH[lang] || SAKE_CATCH.en;
+  const sv = SAKE_SERVING;
+  const t = k => (sv[k][lang] || sv[k].en);
+
+  const cards = SAKE_DATA.map(s => {
+    const params = s.params.map(p => `
+      <div class="sake-param">
+        <span class="sake-param-label">${p.label[lang]||p.label.en}</span>
+        <span class="sake-param-stars">${sakeStars(p.stars)}</span>
+      </div>`).join('');
+    return `
+    <div class="sake-card">
+      <div class="sake-card-img-wrap">
+        <img class="sake-card-img" src="${s.photo}" alt="${s.name}" onerror="this.parentElement.innerHTML='🍶'">
+      </div>
+      <div class="sake-card-body">
+        <span class="sake-label">${s.label}</span>
+        <h3 class="sake-name">${s.name}</h3>
+        <p class="sake-catch">${s.catch[lang]||s.catch.en}</p>
+        <p class="sake-desc">${s.desc[lang]||s.desc.en}</p>
+        <div class="sake-params">${params}</div>
+      </div>
+    </div>`;
+  }).join('');
+
+  return `
+  <section class="cat-section sake-page">
+    <p class="sake-catch-main">${catch_}</p>
+
+    <div class="sake-cards">${cards}</div>
+
+    <div class="sake-serving-section">
+      <h2 class="sake-serving-heading">🍶 ${t('atsukan_title')}</h2>
+      <p class="sake-serving-desc">${t('atsukan_desc')}</p>
+      <div class="sake-tip">${t('atsukan_tip')}</div>
+
+      <h2 class="sake-serving-heading sake-dashi-heading">🫙 ${t('dashi_title')}</h2>
+      <p class="sake-serving-desc">${t('dashi_desc')}</p>
+    </div>
+
+    <div class="sake-story">
+      <div class="sake-story-inner">
+        <span class="sake-story-deco">🏔️</span>
+        <h3 class="sake-story-title">${t('story_title')}</h3>
+        <p class="sake-story-desc">${t('story_desc')}</p>
+      </div>
+    </div>
+  </section>`;
 }
 
 let scrollObserver = null;
@@ -911,20 +1146,6 @@ function render(){
     });
 
     main.innerHTML = CATS.map(c => `<section class="cat-section" id="cat-${c}"><h2 class="section-title">${mascotMiniHtml()}${u['cat_'+c]}</h2>${renderCategoryBody(c, currentLang)}</section>`).join('');
-
-    main.querySelectorAll('.photo-input').forEach(input=>{
-      input.addEventListener('change', e=>{
-        const file = e.target.files[0];
-        if(!file) return;
-        const uid = parseInt(e.target.dataset.uid,10);
-        const reader = new FileReader();
-        reader.onload = ()=>{
-          itemsByUid[uid].photo = reader.result;
-          render();
-        };
-        reader.readAsDataURL(file);
-      });
-    });
 
     syncNavLayout();
     setupScrollSpy();
