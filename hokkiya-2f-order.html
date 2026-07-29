@@ -1,0 +1,630 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>北寄や 2階オーダー</title>
+<style>
+  :root{
+    --cream:#FBF1DE;
+    --cream-deep:#F3E4C2;
+    --wine:#7A1F1F;
+    --wine-deep:#5C1414;
+    --ember:#C1440E;
+    --ink:#3A2A1E;
+    --ink-soft:#8A7860;
+    --line:#E3CFa0;
+    --gold:#D9A441;
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--cream);
+    color:var(--ink);
+    font-family:"Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    padding-bottom:96px;
+    min-height:100vh;
+  }
+  .lang-bar{
+    display:flex;
+    gap:6px;
+    overflow-x:auto;
+    padding:10px 12px;
+    background:var(--cream-deep);
+    scrollbar-width:none;
+  }
+  .lang-bar::-webkit-scrollbar{display:none;}
+  .lang-pill{
+    flex:none;
+    padding:6px 14px;
+    border-radius:999px;
+    border:1.5px solid var(--wine);
+    background:#fff;
+    color:var(--wine);
+    font-size:12.5px;
+    font-weight:700;
+  }
+  .lang-pill.active{background:var(--wine);color:#fff;}
+
+  header{
+    background:var(--wine);
+    color:#fff;
+    padding:18px 16px 14px;
+    position:sticky;
+    top:0;
+    z-index:20;
+    box-shadow:0 2px 10px rgba(0,0,0,.15);
+  }
+  header .brand{display:flex;align-items:baseline;gap:8px;}
+  header .brand .mark{font-size:20px;}
+  header h1{font-size:19px;margin:0;letter-spacing:.04em;font-weight:700;}
+  header .sub{margin:4px 0 0;font-size:12px;color:#E8C9A0;letter-spacing:.06em;}
+  header .seat-badge{
+    position:absolute;top:16px;right:16px;
+    background:var(--gold);color:var(--wine-deep);
+    font-weight:700;font-size:13px;padding:6px 14px;border-radius:999px;
+  }
+
+  .tabs{
+    position:sticky;top:98px;z-index:19;
+    display:flex;gap:8px;overflow-x:auto;
+    padding:12px 14px;background:var(--cream);
+    border-bottom:1px solid var(--line);
+    scrollbar-width:none;
+  }
+  .tabs::-webkit-scrollbar{display:none;}
+  .tab{
+    flex:none;padding:9px 16px;border-radius:999px;
+    border:1.5px solid var(--wine);color:var(--wine);
+    background:#fff;font-size:14px;font-weight:700;white-space:nowrap;
+  }
+  .tab.active{background:var(--wine);color:#fff;}
+
+  .cat-head{display:flex;align-items:center;gap:8px;margin:22px 16px 10px;color:var(--wine);}
+  .cat-head .mark{font-size:18px;}
+  .cat-head h2{font-size:16px;margin:0;font-weight:700;letter-spacing:.03em;}
+  .cat-head::after{content:"";flex:1;border-bottom:2px dashed var(--gold);margin-left:4px;}
+  .subgroup-label{margin:14px 16px 6px;font-size:13px;font-weight:700;color:var(--ember);}
+
+  .items{padding:0 12px;}
+  .item{
+    display:flex;align-items:center;gap:12px;background:#fff;
+    border-radius:16px;padding:12px;margin-bottom:10px;border:1px solid var(--line);
+  }
+  .item .icon{
+    width:52px;height:52px;border-radius:12px;background:var(--cream-deep);
+    display:flex;align-items:center;justify-content:center;font-size:24px;flex:none;
+    overflow:hidden;
+  }
+  .item .icon img{
+    width:100%;height:100%;object-fit:cover;
+    display:block;
+  }
+  .item .info{flex:1;min-width:0;}
+  .item .name{font-size:15px;font-weight:700;line-height:1.3;}
+  .item .price{font-size:13px;color:var(--ember);font-weight:700;margin-top:2px;}
+  .stepper{display:flex;align-items:center;flex:none;border:1.5px solid var(--wine);border-radius:999px;overflow:hidden;}
+  .stepper button{width:32px;height:32px;border:none;background:#fff;color:var(--wine);font-size:18px;font-weight:700;line-height:1;}
+  .stepper button:active{background:var(--cream-deep);}
+  .stepper .qty{width:26px;text-align:center;font-weight:700;font-size:14px;}
+  .item.has-qty{background:#FFF8EA;border-color:var(--gold);}
+
+  .bottombar{
+    position:fixed;bottom:0;left:0;right:0;background:var(--wine);color:#fff;
+    padding:12px 16px calc(12px + env(safe-area-inset-bottom));
+    display:flex;align-items:center;gap:12px;z-index:30;
+    box-shadow:0 -4px 14px rgba(0,0,0,.2);
+  }
+  .bottombar .count{font-size:13px;color:#E8C9A0;}
+  .bottombar .total{font-size:17px;font-weight:700;}
+  .bottombar button{
+    margin-left:auto;background:var(--gold);color:var(--wine-deep);border:none;
+    font-weight:700;font-size:15px;padding:12px 22px;border-radius:999px;
+  }
+  .bottombar button:disabled{background:#8a7860;color:#d8cdb8;}
+
+  .seat-screen{
+    position:fixed;inset:0;background:var(--wine);color:#fff;
+    display:flex;flex-direction:column;align-items:center;justify-content:center;
+    gap:22px;z-index:50;padding:24px;text-align:center;
+  }
+  .lang-bar-seat{
+    position:absolute;
+    top:0;left:0;right:0;
+    background:transparent;
+    justify-content:center;
+    padding:14px 12px;
+  }
+  .lang-bar-seat .lang-pill{
+    border-color:var(--gold);
+    background:rgba(255,255,255,.08);
+    color:#fff;
+  }
+  .lang-bar-seat .lang-pill.active{
+    background:var(--gold);
+    color:var(--wine-deep);
+  }
+  .seat-screen{position:fixed;}
+  .seat-screen .mark{font-size:40px;}
+  .seat-screen h2{margin:0;font-size:20px;letter-spacing:.04em;}
+  .seat-screen p{margin:0;color:#E8C9A0;font-size:14px;}
+  .seat-options{display:flex;gap:16px;}
+  .seat-options button{
+    width:120px;height:120px;border-radius:20px;border:2px solid var(--gold);
+    background:rgba(255,255,255,.06);color:#fff;font-size:20px;font-weight:700;
+  }
+  .seat-options button:active{background:var(--gold);color:var(--wine-deep);}
+
+  .overlay{
+    position:fixed;inset:0;background:rgba(58,42,30,.55);
+    display:none;align-items:center;justify-content:center;z-index:60;padding:20px;
+  }
+  .overlay.show{display:flex;}
+  .sheet{
+    background:#fff;border-radius:20px;max-width:380px;width:100%;
+    max-height:80vh;display:flex;flex-direction:column;overflow:hidden;
+  }
+  .sheet header{background:var(--wine);position:static;box-shadow:none;padding:16px;}
+  .sheet header h3{margin:0;font-size:16px;}
+  .sheet .list{padding:12px 16px;overflow-y:auto;flex:1;}
+  .sheet .row{display:flex;justify-content:space-between;font-size:14px;padding:8px 0;border-bottom:1px solid var(--line);}
+  .sheet .row .n{font-weight:700;}
+  .sheet .total-row{
+    display:flex;justify-content:space-between;padding:14px 16px;
+    font-weight:700;font-size:16px;color:var(--wine);border-top:2px solid var(--line);
+  }
+  .sheet .actions{display:flex;gap:10px;padding:14px 16px calc(14px + env(safe-area-inset-bottom));}
+  .sheet .actions button{flex:1;padding:13px;border-radius:12px;border:none;font-weight:700;font-size:15px;}
+  .btn-cancel{background:var(--cream-deep);color:var(--ink);}
+  .btn-send{background:var(--wine);color:#fff;}
+  .btn-send:disabled{background:#b8a68c;}
+
+  .success-screen{
+    position:fixed;inset:0;background:var(--wine);color:#fff;
+    display:none;flex-direction:column;align-items:center;justify-content:center;
+    gap:16px;z-index:70;padding:24px;text-align:center;
+  }
+  .success-screen.show{display:flex;}
+  .success-screen .mark{font-size:52px;}
+  .success-screen h2{margin:0;font-size:20px;}
+  .success-screen p{margin:0;color:#E8C9A0;font-size:14px;}
+  .success-screen button{
+    margin-top:12px;background:var(--gold);color:var(--wine-deep);border:none;
+    font-weight:700;padding:12px 26px;border-radius:999px;font-size:15px;
+  }
+  .error-msg{color:#ffd7d7;font-size:13px;margin-top:8px;}
+</style>
+</head>
+<body>
+
+<div class="seat-screen" id="seatScreen">
+  <div class="lang-bar lang-bar-seat" id="langBarSeat"></div>
+  <div class="mark">🐻</div>
+  <h2 id="seatTitle">2階のお席をお選びください</h2>
+  <p id="seatDesc">お座りのテーブル番号を選んでください</p>
+  <div class="seat-options">
+    <button onclick="chooseSeat('1')">1</button>
+    <button onclick="chooseSeat('2')">2</button>
+  </div>
+</div>
+
+<div class="lang-bar" id="langBar"></div>
+
+<header>
+  <div class="brand">
+    <span class="mark">🏮</span>
+    <div>
+      <h1>北寄や HOKKIYA</h1>
+      <p class="sub" id="headerSub">2階オーダー</p>
+    </div>
+  </div>
+  <div class="seat-badge" id="seatBadge">-</div>
+</header>
+
+<div class="tabs" id="tabs"></div>
+<div id="menuRoot"></div>
+
+<div class="bottombar">
+  <div>
+    <div class="count" id="countLabel">0</div>
+    <div class="total" id="totalLabel">0đ</div>
+  </div>
+  <button id="reviewBtn" disabled onclick="openReview()"></button>
+</div>
+
+<div class="overlay" id="overlay">
+  <div class="sheet">
+    <header><h3 id="reviewTitle">🐻 ご注文内容</h3></header>
+    <div class="list" id="reviewList"></div>
+    <div class="total-row"><span id="reviewTotalLabel">合計</span><span id="reviewTotal">0đ</span></div>
+    <div class="actions">
+      <button class="btn-cancel" id="backBtn" onclick="closeReview()">戻る</button>
+      <button class="btn-send" id="sendBtn" onclick="sendOrder()">この内容で注文する</button>
+    </div>
+    <div class="error-msg" id="errorMsg" style="display:none;padding:0 16px 12px;"></div>
+  </div>
+</div>
+
+<div class="success-screen" id="successScreen">
+  <div class="mark">✅</div>
+  <h2 id="successTitle">ご注文ありがとうございます</h2>
+  <p id="successDesc">スタッフがすぐに参ります。<br>少々お待ちください。</p>
+  <button onclick="resetOrder()" id="continueBtn">続けて注文する</button>
+</div>
+
+<script>
+const BOT_TOKEN = "8508081687:AAFrHxXsv6NgbzDcjBb4HdtdTcyyxgf6ppc";
+const CHAT_ID = "-5504652930";
+const LANGS = ["ja","vi","en","ko","zh"];
+const LANG_LABEL = { ja:"日本語", vi:"Tiếng Việt", en:"English", ko:"한국어", zh:"繁體中文" };
+let LANG = "ja";
+
+const STR = {
+  headerSub: { ja:"2階オーダー", vi:"Đặt món tầng 2", en:"2F Order", ko:"2층 주문", zh:"2樓點餐" },
+  seatBadgeSuffix: { ja:"席", vi:"", en:"", ko:"석", zh:"桌" },
+  seatTitle: { ja:"2階のお席をお選びください", vi:"Vui lòng chọn bàn của bạn ở tầng 2", en:"Please select your seat on the 2nd floor", ko:"2층 좌석을 선택해 주세요", zh:"請選擇您在2樓的座位" },
+  seatDesc: { ja:"お座りのテーブル番号を選んでください", vi:"Chọn số bàn bạn đang ngồi", en:"Choose the table number you are seated at", ko:"앉아 계신 테이블 번호를 선택하세요", zh:"請選擇您所在的桌號" },
+  countLabel: { ja:function(n){return "選択中 "+n+"品";}, vi:function(n){return "Đã chọn "+n+" món";}, en:function(n){return n+" item(s) selected";}, ko:function(n){return "선택 "+n+"개";}, zh:function(n){return "已選擇 "+n+" 項";} },
+  reviewBtn: { ja:"注文内容を確認", vi:"Xem lại đơn hàng", en:"Review order", ko:"주문 내용 확인", zh:"確認訂單內容" },
+  reviewTitle: { ja:"🐻 ご注文内容", vi:"🐻 Nội dung đơn hàng", en:"🐻 Your order", ko:"🐻 주문 내용", zh:"🐻 訂購內容" },
+  reviewTotalLabel: { ja:"合計", vi:"Tổng cộng", en:"Total", ko:"합계", zh:"合計" },
+  backBtn: { ja:"戻る", vi:"Quay lại", en:"Back", ko:"돌아가기", zh:"返回" },
+  sendBtn: { ja:"この内容で注文する", vi:"Xác nhận đặt món", en:"Place this order", ko:"이 내용으로 주문하기", zh:"確認送出訂單" },
+  sending: { ja:"送信中...", vi:"Đang gửi...", en:"Sending...", ko:"전송 중...", zh:"傳送中..." },
+  errorMsg: { ja:function(m){return "送信に失敗しました。もう一度お試しください。（"+m+"）";}, vi:function(m){return "Gửi thất bại. Vui lòng thử lại. ("+m+")";}, en:function(m){return "Failed to send. Please try again. ("+m+")";}, ko:function(m){return "전송에 실패했습니다. 다시 시도해 주세요. ("+m+")";}, zh:function(m){return "傳送失敗，請再試一次。（"+m+"）";} },
+  successTitle: { ja:"ご注文ありがとうございます", vi:"Cảm ơn quý khách đã đặt món", en:"Thank you for your order", ko:"주문해 주셔서 감사합니다", zh:"感謝您的訂購" },
+  successDesc: { ja:"スタッフがすぐに参ります。<br>少々お待ちください。", vi:"Nhân viên sẽ đến ngay.<br>Vui lòng chờ trong giây lát.", en:"Staff will be with you shortly.<br>Please wait a moment.", ko:"직원이 곧 찾아뵙겠습니다.<br>잠시만 기다려 주세요.", zh:"服務人員將盡快為您服務。<br>請稍候。" },
+  continueBtn: { ja:"続けて注文する", vi:"Đặt thêm món", en:"Order more", ko:"계속 주문하기", zh:"繼續點餐" },
+  orderNotifyTitle: { ja:"新しい注文" },
+  seatWord: { ja:"席" },
+  totalWord: { ja:"合計" }
+};
+
+function N(ja,vi,en,ko,zh){ return {ja:ja,vi:vi,en:en,ko:ko,zh:zh}; }
+const IMG_BASE = "https://raw.githubusercontent.com/OdenHokkiya/menu/main/";
+
+const MENU = [
+  { cat:N("おでん","Oden","Oden","오뎅","關東煮"), icon:"🍢", items:[
+    [N("大根","Củ cải trắng","Daikon Radish","무","蘿蔔"),23000,"o1.png"],
+    [N("厚揚げ豆腐","Đậu hũ chiên","Fried Tofu","유부두부","厚炸豆腐"),23000,"o2.png"],
+    [N("玉子","Trứng","Egg","계란","蛋"),23000,"o3.png"],
+    [N("こんにゃく","Củ nưa (Konjac)","Konjac","곤약","蒟蒻"),23000,"o4.png"],
+    [N("しらたき結","Nút thắt shirataki","Shirataki Knot","실곤약 매듭","白瀧結"),23000,"o5.png"],
+    [N("だし薫椎茸","Nấm đông cô ngâm dashi","Dashi-Simmered Shiitake","다시향 표고버섯","高湯香菇"),28000,"o6.png"],
+    [N("ちくわ","Chikuwa (chả cá ống)","Chikuwa (Fish Cake)","치쿠와","竹輪"),28000,"o7.png"],
+    [N("なると巻き","Chả cá Naruto","Narutomaki","나루토마키","魚板卷"),28000,"o8.png"],
+    [N("もち巾着","Túi mochi đậu hũ","Mochi Rice Cake Pouch","모찌 유부주머니","麻糬豆包"),28000,"o9.png"],
+    [N("はんぺん","Hanpen (chả cá trắng)","Hanpen (Fish Cake)","한펜","半片"),28000,"o10.png"],
+    [N("ソーセージ","Xúc xích","Sausage","소시지","香腸"),38000,"o11.png"],
+    [N("自家製つくね","Viên gà tự làm","Homemade Tsukune","수제 츠쿠네","自製雞肉丸"),38000,"o12.png"],
+    [N("牛タン","Lưỡi bò","Beef Tongue","우설","牛舌"),48000,"o13.png"],
+    [N("海老真丈","Chả tôm","Shrimp Cake","새우 신조","蝦真薯"),48000,"o14.png"],
+    [N("自家製さつま揚げ","Chả cá chiên tự làm","Homemade Satsuma-age","수제 사츠마아게","自製薩摩炸魚餅"),48000,"o15.png"],
+    [N("つぶ貝","Ốc bulot","Whelk","골뱅이","螺貝"),58000,"o16.png"],
+    [N("手巻きロールキャベツ","Bắp cải cuộn","Cabbage Roll","양배추롤","手捲高麗菜捲"),58000,"o17.png"],
+    [N("おでん7点盛り合わせ","Set oden 7 món","Oden 7-Piece Set","오뎅 7종 모둠","關東煮7品拼盤"),218000]
+  ]},
+  { cat:N("一品・サラダ","Món khai vị & Salad","Appetizers & Salads","안주・샐러드","小菜・沙拉"), icon:"🥗", items:[
+    [N("ラーメンサラダ","Salad mì ramen","Ramen Salad","라멘 샐러드","拉麵沙拉"),78000,"1.png"],
+    [N("ラーメンサラダ ハーフ","Salad mì ramen (nửa phần)","Ramen Salad (Half)","라멘 샐러드 하프","拉麵沙拉(半份)"),39000,"1.png"],
+    [N("ツナ大根シーザーサラダ","Salad Caesar cá ngừ củ cải","Tuna & Daikon Caesar Salad","참치무 시저 샐러드","鮪魚蘿蔔凱薩沙拉"),128000,"2.png"],
+    [N("ツナ大根シーザーサラダ ハーフ","Salad Caesar cá ngừ củ cải (nửa phần)","Tuna & Daikon Caesar Salad (Half)","참치무 시저 샐러드 하프","鮪魚蘿蔔凱薩沙拉(半份)"),39000,"2.png"],
+    [N("きゅうり浅漬け","Dưa leo muối nhanh","Quick-Pickled Cucumber","오이 아사즈케","小黃瓜淺漬"),48000,"3.png"],
+    [N("納豆冷奴","Đậu hũ lạnh natto","Cold Tofu with Natto","낫토 히야얏코","納豆冷豆腐"),58000,"4.png"],
+    [N("炙り明太子の昆布締め","Trứng cá minh thái nướng ủ rong biển","Seared Mentaiko Kombu-Cured","명란 다시마 숙성 아부리","炙燒明太子昆布締"),128000,"5.png"],
+    [N("焼きなすお浸し","Cà tím nướng ngâm nước dùng","Grilled Eggplant Ohitashi","구운 가지 오히타시","烤茄子涼拌"),98000,"6.png"],
+    [N("鴨たたき","Vịt áp chảo kiểu tataki","Seared Duck","오리 타타키","炙燒鴨肉"),128000,"7.png"],
+    [N("コーンバター","Bắp xào bơ","Corn Butter","콘버터","奶油玉米"),68000,"8.png"],
+    [N("アスパラバター","Măng tây xào bơ","Asparagus Butter","아스파라거스 버터","奶油蘆筍"),98000,"9.png"]
+  ]},
+  { cat:N("揚げ物・炒め物","Món chiên & xào","Fried & Stir-Fried","튀김・볶음","炸物・炒物"), icon:"🍤", items:[
+    [N("じゃがバター塩辛","Khoai tây bơ mực muối","Butter Potato with Salted Squid","감자버터 시오카라","奶油馬鈴薯鹽辛"),98000,"10.png"],
+    [N("若鶏ザンギ","Gà chiên kiểu Hokkaido","Hokkaido-Style Fried Chicken","자칭기(홋카이도식 치킨)","北海道炸雞"),98000,"11.png"],
+    [N("たこザンギ","Bạch tuộc chiên","Fried Octopus","문어 자칭기","炸章魚"),118000,"12.png"],
+    [N("塩ホルモン炒め","Nội tạng xào muối","Stir-Fried Salted Offal","소금 호르몬 볶음","鹽味內臟拌炒"),128000,"13.png"]
+  ]},
+  { cat:N("焼き物・名物","Món nướng & đặc sản","Grilled & Specialties","구이・명물","燒烤・招牌菜"), icon:"🔥", items:[
+    [N("子持ちししゃも","Cá shishamo trứng","Shishamo Smelt with Roe","알 밴 시샤모","柳葉魚"),128000,"14.png"],
+    [N("石狩のちゃんちゃん焼き","Cá hồi Ishikari nướng chanchan","Ishikari Salmon Chanchan-Yaki","이시카리 찬찬야키","石狩鮭魚味噌燒"),158000,"15.png"],
+    [N("北寄貝醤油バター焼き","Sò Hokki nướng bơ xì dầu","Hokki Clam Soy-Butter Grill","北寄조개 간장버터구이","北寄貝醬油奶油燒"),168000,"16.png"],
+    [N("名物ジンギスカン","Thịt cừu nướng Jingisukan","Famous Jingisukan (Lamb BBQ)","명물 징기스칸","名物成吉思汗烤肉"),198000,"17.png"],
+    [N("羅臼の真ほっけ炭火焼き","Cá Hokke Rausu nướng than","Rausu Atka Mackerel Charcoal Grill","라우스 홋케 숯불구이","羅臼真鱈魚炭火燒"),218000,"18.png"],
+    [N("帯広名物！豚丼","Cơm heo Obihiro","Obihiro Pork Rice Bowl","오비히로 명물 부타동","帶廣名物豬肉丼"),148000,"19.png"],
+    [N("札幌チキンスープカレー","Cà ri súp gà Sapporo","Sapporo Chicken Soup Curry","삿포로 치킨 스프카레","札幌雞肉湯咖哩"),218000,"20.png"],
+    [N("根室！エスカロップ","Escalope Nemuro","Nemuro Escalope","네무로 에스카롭","根室黑醋醬豬排飯"),178000,"21.png"],
+    [N("レギュラーバーグディッシュ","Đĩa hamburger steak","Hamburger Steak Plate","함박스테이크 디시","漢堡排套餐"),198000,"22.png"],
+    [N("北海道味噌ラーメン","Mì ramen miso Hokkaido","Hokkaido Miso Ramen","홋카이도 미소라멘","北海道味噌拉麵"),148000,"23.png"],
+    [N("鰹節塩昆布おにぎり","Cơm nắm cá bào & rong biển muối","Bonito & Salted Kelp Rice Ball","가츠오부시 소금다시마 오니기리","柴魚鹽昆布飯糰"),68000,"24.png"],
+    [N("帆立炊き込み焼きおにぎり","Cơm nắm sò điệp nướng","Grilled Scallop Rice Ball","가리비 다키코미 야키오니기리","干貝炊飯烤飯糰"),98000,"25.png"],
+    [N("秋刀魚の塩焼き","Cá thu đao nướng muối","Grilled Salted Pacific Saury","꽁치 소금구이","鹽烤秋刀魚"),98000,"26.png"]
+  ]},
+  { cat:N("ドリンク","Đồ uống","Drinks","음료","飲品"), icon:"🍺", groups:[
+    { label:N("ビール","Bia","Beer","맥주","啤酒"), items:[
+      [N("サッポロ","Bia Sapporo","Sapporo Beer","삿포로","三寶樂"),58000]
+    ]},
+    { label:N("ウイスキー","Rượu whisky","Whisky","위스키","威士忌"), items:[
+      [N("角ハイボール（グラス）","Highball Kaku (ly)","Kaku Highball (Glass)","카쿠 하이볼(잔)","角瓶高球(杯)"),108000],
+      [N("角（サントリー角瓶）ボトル","Chai Kaku (Suntory)","Kaku (Suntory) Bottle","카쿠(산토리) 보틀","角瓶(三得利)(瓶)"),1180000],
+      [N("ジェムソン（グラス）","Jameson (ly)","Jameson (Glass)","제임슨(잔)","尊美醇(杯)"),98000],
+      [N("ジェムソン ボトル","Chai Jameson","Jameson Bottle","제임슨 보틀","尊美醇(瓶)"),980000],
+      [N("ジムビーム（グラス）","Jim Beam (ly)","Jim Beam (Glass)","짐빔(잔)","金賓(杯)"),88000],
+      [N("ジムビーム ボトル","Chai Jim Beam","Jim Beam Bottle","짐빔 보틀","金賓(瓶)"),880000]
+    ]},
+    { label:N("サワー","Rượu sour","Sour","사와","沙瓦"), items:[
+      [N("生搾りレモンサワー","Sour chanh vắt tươi","Fresh-Squeezed Lemon Sour","생착즙 레몬사와","現榨檸檬沙瓦"),98000],
+      [N("ライムサワー","Sour chanh xanh","Lime Sour","라임사와","萊姆沙瓦"),78000],
+      [N("完熟梅酒サワー","Sour rượu mơ chín","Ripe Plum Wine Sour","완숙 매실주 사와","熟梅酒沙瓦"),78000],
+      [N("柚子酒サワー","Sour rượu yuzu","Yuzu Wine Sour","유자주 사와","柚子酒沙瓦"),78000]
+    ]},
+    { label:N("お茶ハイボール","Highball trà","Tea Highball","차 하이볼","茶類高球"), items:[
+      [N("烏龍茶ハイボール","Highball trà ô long","Oolong Tea Highball","우롱차 하이볼","烏龍茶高球"),78000],
+      [N("緑茶ハイボール","Highball trà xanh","Green Tea Highball","녹차 하이볼","綠茶高球"),78000],
+      [N("北海道コーン茶ハイボール","Highball trà bắp Hokkaido","Hokkaido Corn Tea Highball","홋카이도 옥수수차 하이볼","北海道玉米茶高球"),78000]
+    ]},
+    { label:N("焼酎","Rượu Shochu","Shochu","소주(쇼츄)","燒酎"), items:[
+      [N("麦焼酎いいちこ（グラス）","Shochu lúa mạch Iichiko (ly)","Iichiko Barley Shochu (Glass)","보리소주 이이치코(잔)","麥燒酎伊伊千古(杯)"),88000],
+      [N("麦焼酎いいちこ ボトル","Chai Shochu Iichiko","Iichiko Barley Shochu Bottle","이이치코 보틀","麥燒酎伊伊千古(瓶)"),880000],
+      [N("芋焼酎黒霧島（グラス）","Shochu khoai lang Kurokirishima (ly)","Kurokirishima Sweet Potato Shochu (Glass)","고구마소주 쿠로키리시마(잔)","地瓜燒酎黑霧島(杯)"),88000],
+      [N("芋焼酎黒霧島 ボトル","Chai Kurokirishima","Kurokirishima Bottle","쿠로키리시마 보틀","地瓜燒酎黑霧島(瓶)"),880000],
+      [N("麦焼酎中々（グラス）","Shochu lúa mạch Nakanaka (ly)","Nakanaka Barley Shochu (Glass)","보리소주 나카나카(잔)","麥燒酎中中(杯)"),108000],
+      [N("麦焼酎中々 ボトル","Chai Nakanaka","Nakanaka Bottle","나카나카 보틀","麥燒酎中中(瓶)"),1108000]
+    ]},
+    { label:N("日本酒","Rượu sake","Sake","일본술(사케)","日本酒"), items:[
+      [N("男山 純米（グラス）","Sake Otokoyama Junmai (ly)","Otokoyama Junmai (Glass)","오토코야마 준마이(잔)","男山純米(杯)"),298000],
+      [N("男山 純米 ボトル","Chai Otokoyama Junmai","Otokoyama Junmai Bottle","오토코야마 보틀","男山純米(瓶)"),980000],
+      [N("七賢 純米大吟醸（グラス）","Sake Shichiken Daiginjo (ly)","Shichiken Junmai Daiginjo (Glass)","시치켄 준마이다이긴조(잔)","七賢純米大吟釀(杯)"),380000],
+      [N("七賢 純米大吟醸 ボトル","Chai Shichiken","Shichiken Bottle","시치켄 보틀","七賢純米大吟釀(瓶)"),1480000],
+      [N("出汁割り日本酒","Sake pha dashi","Dashi-Infused Sake","다시와리 사케","高湯兌日本酒"),148000]
+    ]},
+    { label:N("ソフトドリンク","Nước ngọt","Soft Drinks","소프트드링크","軟性飲料"), items:[
+      [N("烏龍茶","Trà ô long","Oolong Tea","우롱차","烏龍茶"),38000],
+      [N("緑茶","Trà xanh","Green Tea","녹차","綠茶"),38000],
+      [N("北海道コーン茶","Trà bắp Hokkaido","Hokkaido Corn Tea","홋카이도 옥수수차","北海道玉米茶"),38000],
+      [N("グァバジュース","Nước ép ổi","Guava Juice","구아바주스","芭樂汁"),38000],
+      [N("コカコーラ","Coca-Cola","Coca-Cola","코카콜라","可口可樂"),38000],
+      [N("強炭酸水","Nước có ga mạnh","Strong Sparkling Water","강탄산수","強氣泡水"),38000]
+    ]}
+  ]}
+];
+
+let seat = null;
+const cart = {};
+const nameEls = {};
+const catHeadEls = [];
+const tabEls = [];
+const groupLabelEls = [];
+
+const langBar = document.getElementById("langBar");
+const langBarSeat = document.getElementById("langBarSeat");
+[langBar, langBarSeat].forEach(function(bar){
+  LANGS.forEach(function(l){
+    const b = document.createElement("button");
+    b.className = "lang-pill" + (l===LANG ? " active" : "");
+    b.textContent = LANG_LABEL[l];
+    b.onclick = function(){ setLang(l); };
+    b.setAttribute("data-lang", l);
+    bar.appendChild(b);
+  });
+});
+
+function setLang(l){
+  LANG = l;
+  document.querySelectorAll(".lang-pill").forEach(function(btn){
+    btn.classList.toggle("active", btn.getAttribute("data-lang")===l);
+  });
+  document.getElementById("headerSub").textContent = STR.headerSub[l];
+  document.getElementById("seatTitle").textContent = STR.seatTitle[l];
+  document.getElementById("seatDesc").textContent = STR.seatDesc[l];
+  document.getElementById("reviewBtn").textContent = STR.reviewBtn[l];
+  document.getElementById("reviewTitle").textContent = STR.reviewTitle[l];
+  document.getElementById("reviewTotalLabel").textContent = STR.reviewTotalLabel[l];
+  document.getElementById("backBtn").textContent = STR.backBtn[l];
+  document.getElementById("successTitle").textContent = STR.successTitle[l];
+  document.getElementById("successDesc").innerHTML = STR.successDesc[l];
+  document.getElementById("continueBtn").textContent = STR.continueBtn[l];
+  if(seat) document.getElementById("seatBadge").textContent = seat + STR.seatBadgeSuffix[l];
+
+  Object.keys(nameEls).forEach(function(id){ nameEls[id].textContent = cart[id].names[l]; });
+  catHeadEls.forEach(function(o){ o.el.textContent = o.n[l]; });
+  tabEls.forEach(function(o){ o.el.textContent = o.n[l]; });
+  groupLabelEls.forEach(function(o){ o.el.textContent = o.n[l]; });
+
+  updateBar();
+}
+
+function chooseSeat(s){
+  seat = s;
+  document.getElementById("seatBadge").textContent = s + STR.seatBadgeSuffix[LANG];
+  document.getElementById("seatScreen").style.display = "none";
+}
+(function initSeatFromUrl(){
+  const p = new URLSearchParams(location.search).get("seat");
+  if(p === "1" || p === "2") chooseSeat(p);
+})();
+
+const tabsEl = document.getElementById("tabs");
+const rootEl = document.getElementById("menuRoot");
+let itemCounter = 0;
+
+MENU.forEach(function(cat, ci){
+  const tab = document.createElement("button");
+  tab.className = "tab" + (ci===0 ? " active" : "");
+  tab.textContent = cat.cat[LANG];
+  tab.onclick = function(){ scrollToCat(ci); };
+  tab.id = "tab-" + ci;
+  tabsEl.appendChild(tab);
+  tabEls.push({el:tab, n:cat.cat});
+
+  const head = document.createElement("div");
+  head.className = "cat-head";
+  head.id = "cat-" + ci;
+  const headMark = document.createElement("span");
+  headMark.className = "mark"; headMark.textContent = cat.icon;
+  const headTxt = document.createElement("h2");
+  headTxt.textContent = cat.cat[LANG];
+  head.appendChild(headMark); head.appendChild(headTxt);
+  rootEl.appendChild(head);
+  catHeadEls.push({el:headTxt, n:cat.cat});
+
+  function renderItems(items){
+    const wrap = document.createElement("div");
+    wrap.className = "items";
+    items.forEach(function(pair){
+      const names = pair[0], price = pair[1], img = pair[2];
+      itemCounter++;
+      const id = "item-" + itemCounter;
+      cart[id] = { names:names, price:price, qty: 0 };
+      const row = document.createElement("div");
+      row.className = "item";
+      row.id = "row-" + id;
+
+      const icon = document.createElement("div");
+      icon.className = "icon";
+      if(img){
+        const im = document.createElement("img");
+        im.src = IMG_BASE + img;
+        im.alt = names.ja;
+        im.loading = "lazy";
+        icon.appendChild(im);
+      } else {
+        icon.textContent = cat.icon;
+      }
+
+      const info = document.createElement("div");
+      info.className = "info";
+      const nameEl = document.createElement("div");
+      nameEl.className = "name"; nameEl.textContent = names[LANG];
+      const priceEl = document.createElement("div");
+      priceEl.className = "price"; priceEl.textContent = price.toLocaleString() + "đ";
+      info.appendChild(nameEl); info.appendChild(priceEl);
+      nameEls[id] = nameEl;
+
+      const stepper = document.createElement("div");
+      stepper.className = "stepper";
+      stepper.innerHTML = '<button onclick="changeQty(\''+id+'\',-1)">−</button><span class="qty" id="qty-'+id+'">0</span><button onclick="changeQty(\''+id+'\',1)">＋</button>';
+
+      row.appendChild(icon); row.appendChild(info); row.appendChild(stepper);
+      wrap.appendChild(row);
+    });
+    rootEl.appendChild(wrap);
+  }
+
+  if(cat.groups){
+    cat.groups.forEach(function(g){
+      const label = document.createElement("div");
+      label.className = "subgroup-label";
+      label.textContent = g.label[LANG];
+      rootEl.appendChild(label);
+      groupLabelEls.push({el:label, n:g.label});
+      renderItems(g.items);
+    });
+  } else {
+    renderItems(cat.items);
+  }
+});
+
+function scrollToCat(i){
+  document.querySelectorAll(".tab").forEach(function(t){ t.classList.remove("active"); });
+  document.getElementById("tab-"+i).classList.add("active");
+  const el = document.getElementById("cat-"+i);
+  const y = el.getBoundingClientRect().top + window.scrollY - 150;
+  window.scrollTo({top:y, behavior:"smooth"});
+}
+
+function changeQty(id, delta){
+  const it = cart[id];
+  it.qty = Math.max(0, it.qty + delta);
+  document.getElementById("qty-"+id).textContent = it.qty;
+  document.getElementById("row-"+id).classList.toggle("has-qty", it.qty > 0);
+  updateBar();
+}
+
+function updateBar(){
+  let count = 0, total = 0;
+  Object.values(cart).forEach(function(it){ count += it.qty; total += it.qty * it.price; });
+  document.getElementById("countLabel").textContent = STR.countLabel[LANG](count);
+  document.getElementById("totalLabel").textContent = total.toLocaleString() + "đ";
+  document.getElementById("reviewBtn").disabled = count === 0;
+  document.getElementById("reviewBtn").textContent = STR.reviewBtn[LANG];
+}
+
+function openReview(){
+  if(!seat){
+    document.getElementById("seatScreen").style.display = "flex";
+    return;
+  }
+  const list = document.getElementById("reviewList");
+  list.innerHTML = "";
+  let total = 0;
+  Object.values(cart).forEach(function(it){
+    if(it.qty > 0){
+      total += it.qty * it.price;
+      const row = document.createElement("div");
+      row.className = "row";
+      row.innerHTML = '<span>'+it.names[LANG]+' × '+it.qty+'</span><span class="n">'+(it.price*it.qty).toLocaleString()+'đ</span>';
+      list.appendChild(row);
+    }
+  });
+  document.getElementById("reviewTotal").textContent = total.toLocaleString() + "đ";
+  document.getElementById("errorMsg").style.display = "none";
+  document.getElementById("sendBtn").disabled = false;
+  document.getElementById("sendBtn").textContent = STR.sendBtn[LANG];
+  document.getElementById("overlay").classList.add("show");
+}
+function closeReview(){
+  document.getElementById("overlay").classList.remove("show");
+}
+
+async function sendOrder(){
+  const btn = document.getElementById("sendBtn");
+  btn.disabled = true;
+  btn.textContent = STR.sending[LANG];
+
+  let lines = [];
+  let total = 0;
+  Object.values(cart).forEach(function(it){
+    if(it.qty > 0){
+      lines.push("・"+it.names.ja+" ×"+it.qty);
+      total += it.qty * it.price;
+    }
+  });
+
+  const text = "🔔 " + STR.orderNotifyTitle.ja + "\n" +
+    STR.seatWord.ja + ": " + seat + "番\n\n" +
+    lines.join("\n") +
+    "\n\n" + STR.totalWord.ja + ": " + total.toLocaleString() + "đ";
+
+  try{
+    const res = await fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ chat_id: CHAT_ID, text: text })
+    });
+    const data = await res.json();
+    if(!data.ok) throw new Error(data.description || "send failed");
+
+    document.getElementById("overlay").classList.remove("show");
+    document.getElementById("successScreen").classList.add("show");
+  } catch(err){
+    document.getElementById("errorMsg").textContent = STR.errorMsg[LANG](err.message);
+    document.getElementById("errorMsg").style.display = "block";
+    btn.disabled = false;
+    btn.textContent = STR.sendBtn[LANG];
+  }
+}
+
+function resetOrder(){
+  Object.keys(cart).forEach(function(id){
+    cart[id].qty = 0;
+    document.getElementById("qty-"+id).textContent = 0;
+    document.getElementById("row-"+id).classList.remove("has-qty");
+  });
+  updateBar();
+  document.getElementById("successScreen").classList.remove("show");
+  window.scrollTo({top:0});
+}
+
+updateBar();
+</script>
+</body>
+</html>
