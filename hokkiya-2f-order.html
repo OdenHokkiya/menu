@@ -275,9 +275,9 @@ const STR = {
   successTitle: { ja:"ご注文ありがとうございます", vi:"Cảm ơn quý khách đã đặt món", en:"Thank you for your order", ko:"주문해 주셔서 감사합니다", zh:"感謝您的訂購" },
   successDesc: { ja:"スタッフがすぐに参ります。<br>少々お待ちください。", vi:"Nhân viên sẽ đến ngay.<br>Vui lòng chờ trong giây lát.", en:"Staff will be with you shortly.<br>Please wait a moment.", ko:"직원이 곧 찾아뵙겠습니다.<br>잠시만 기다려 주세요.", zh:"服務人員將盡快為您服務。<br>請稍候。" },
   continueBtn: { ja:"続けて注文する", vi:"Đặt thêm món", en:"Order more", ko:"계속 주문하기", zh:"繼續點餐" },
-  orderNotifyTitle: { ja:"新しい注文" },
-  seatWord: { ja:"席" },
-  totalWord: { ja:"合計" }
+  orderNotifyTitle: { ja:"新しい注文", vi:"Đơn hàng mới" },
+  seatWord: { ja:"席", vi:"Bàn" },
+  totalWord: { ja:"合計", vi:"Tổng cộng" }
 };
 
 function N(ja,vi,en,ko,zh){ return {ja:ja,vi:vi,en:en,ko:ko,zh:zh}; }
@@ -584,15 +584,15 @@ async function sendOrder(){
   let total = 0;
   Object.values(cart).forEach(function(it){
     if(it.qty > 0){
-      lines.push("・"+it.names.ja+" ×"+it.qty);
+      lines.push("・"+it.names.ja+" / "+it.names.vi+" ×"+it.qty);
       total += it.qty * it.price;
     }
   });
 
-  const text = "🔔 " + STR.orderNotifyTitle.ja + "\n" +
-    STR.seatWord.ja + ": " + seat + "番\n\n" +
+  const text = "🔔 " + STR.orderNotifyTitle.ja + " / " + STR.orderNotifyTitle.vi + "\n" +
+    STR.seatWord.ja + "/" + STR.seatWord.vi + ": " + seat + "番\n\n" +
     lines.join("\n") +
-    "\n\n" + STR.totalWord.ja + ": " + total.toLocaleString() + "đ";
+    "\n\n" + STR.totalWord.ja + "/" + STR.totalWord.vi + ": " + total.toLocaleString() + "đ";
 
   try{
     const res = await fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
