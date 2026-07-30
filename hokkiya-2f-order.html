@@ -144,6 +144,95 @@
     background:var(--gold);
     color:var(--wine-deep);
   }
+  .quick-actions{
+    display:flex;
+    gap:8px;
+    padding:10px 14px 4px;
+    background:var(--cream);
+  }
+  .quick-actions button{
+    flex:1;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    padding:10px 6px;
+    border-radius:14px;
+    border:1.5px solid var(--wine);
+    background:#fff;
+    color:var(--wine);
+    font-size:12px;
+    font-weight:700;
+  }
+  .quick-actions button:active{background:var(--cream-deep);}
+  .quick-actions button .qa-icon{font-size:19px;}
+  .quick-actions button:disabled{opacity:.5;}
+
+  .toast{
+    position:fixed;
+    left:50%;
+    bottom:100px;
+    transform:translateX(-50%) translateY(20px);
+    background:var(--wine-deep);
+    color:#fff;
+    padding:12px 22px;
+    border-radius:999px;
+    font-size:14px;
+    font-weight:700;
+    z-index:80;
+    opacity:0;
+    pointer-events:none;
+    transition:opacity .25s, transform .25s;
+    white-space:nowrap;
+    box-shadow:0 6px 20px rgba(0,0,0,.25);
+  }
+  .toast.show{
+    opacity:1;
+    transform:translateX(-50%) translateY(0);
+  }
+
+  .qa-modal-overlay{
+    position:fixed;inset:0;
+    background:rgba(58,42,30,.55);
+    display:none;
+    align-items:center;
+    justify-content:center;
+    z-index:65;
+    padding:20px;
+  }
+  .qa-modal-overlay.show{display:flex;}
+  .qa-modal{
+    background:#fff;
+    border-radius:18px;
+    max-width:340px;
+    width:100%;
+    padding:20px;
+  }
+  .qa-modal h3{margin:0 0 12px;font-size:16px;color:var(--wine);}
+  .qa-modal textarea{
+    width:100%;
+    min-height:80px;
+    border:1.5px solid var(--line);
+    border-radius:10px;
+    padding:10px;
+    font-size:14px;
+    font-family:inherit;
+    resize:vertical;
+    box-sizing:border-box;
+  }
+  .qa-modal .qa-modal-actions{
+    display:flex;
+    gap:10px;
+    margin-top:14px;
+  }
+  .qa-modal .qa-modal-actions button{
+    flex:1;
+    padding:11px;
+    border-radius:10px;
+    border:none;
+    font-weight:700;
+    font-size:14px;
+  }
   .seat-screen{position:fixed;}
   .seat-screen .mark{font-size:40px;}
   .seat-screen h2{margin:0;font-size:20px;letter-spacing:.04em;}
@@ -221,6 +310,21 @@
   <div class="seat-badge" id="seatBadge">-</div>
 </header>
 
+<div class="quick-actions">
+  <button onclick="quickAction('call')">
+    <span class="qa-icon">🔔</span>
+    <span id="qaCallLabel">スタッフを呼ぶ</span>
+  </button>
+  <button onclick="quickAction('bill')">
+    <span class="qa-icon">💰</span>
+    <span id="qaBillLabel">お会計</span>
+  </button>
+  <button onclick="openOtherModal()">
+    <span class="qa-icon">✉️</span>
+    <span id="qaOtherLabel">その他</span>
+  </button>
+</div>
+
 <div class="tabs" id="tabs"></div>
 <div id="menuRoot"></div>
 
@@ -244,6 +348,19 @@
     <div class="error-msg" id="errorMsg" style="display:none;padding:0 16px 12px;"></div>
   </div>
 </div>
+
+<div class="qa-modal-overlay" id="qaOtherOverlay">
+  <div class="qa-modal">
+    <h3 id="qaOtherTitle">その他のご要望</h3>
+    <textarea id="qaOtherText" placeholder=""></textarea>
+    <div class="qa-modal-actions">
+      <button class="btn-cancel" id="qaOtherCancel" onclick="closeOtherModal()">戻る</button>
+      <button class="btn-send" id="qaOtherSend" onclick="sendOtherRequest()">送信する</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
 
 <div class="success-screen" id="successScreen">
   <div class="mark">✅</div>
@@ -276,6 +393,17 @@ const STR = {
   successDesc: { ja:"スタッフがすぐに参ります。<br>少々お待ちください。", vi:"Nhân viên sẽ đến ngay.<br>Vui lòng chờ trong giây lát.", en:"Staff will be with you shortly.<br>Please wait a moment.", ko:"직원이 곧 찾아뵙겠습니다.<br>잠시만 기다려 주세요.", zh:"服務人員將盡快為您服務。<br>請稍候。" },
   continueBtn: { ja:"続けて注文する", vi:"Đặt thêm món", en:"Order more", ko:"계속 주문하기", zh:"繼續點餐" },
   orderNotifyTitle: { ja:"新しい注文", vi:"Đơn hàng mới" },
+  qaCallLabel: { ja:"スタッフを呼ぶ", vi:"Gọi nhân viên", en:"Call staff", ko:"직원 호출", zh:"呼叫服務員" },
+  qaBillLabel: { ja:"お会計", vi:"Thanh toán", en:"Bill", ko:"계산서", zh:"結帳" },
+  qaOtherLabel: { ja:"その他", vi:"Khác", en:"Other", ko:"기타", zh:"其他" },
+  qaOtherTitle: { ja:"その他のご要望", vi:"Yêu cầu khác", en:"Other request", ko:"기타 요청 사항", zh:"其他需求" },
+  qaOtherPlaceholder: { ja:"内容を入力してください（例：取り皿をください）", vi:"Nhập nội dung (VD: xin thêm chén đĩa)", en:"Enter your request (e.g. more plates please)", ko:"내용을 입력해 주세요 (예: 접시를 더 주세요)", zh:"請輸入內容（例如：請給我小碟子）" },
+  qaSendBtn: { ja:"送信する", vi:"Gửi", en:"Send", ko:"전송하기", zh:"傳送" },
+  qaSentToast: { ja:"送信しました", vi:"Đã gửi", en:"Sent", ko:"전송되었습니다", zh:"已傳送" },
+  qaCallMsg: { ja:"スタッフ呼び出し", vi:"Gọi nhân viên" },
+  qaBillMsg: { ja:"お会計をお願いします", vi:"Xin cho tôi thanh toán" },
+  qaOtherMsg: { ja:"その他のご要望", vi:"Yêu cầu khác" },
+  qaOrigLabel: { ja:"原文" },
   seatWord: { ja:"席", vi:"Bàn" },
   totalWord: { ja:"合計", vi:"Tổng cộng" }
 };
@@ -422,6 +550,13 @@ function setLang(l){
   document.getElementById("successTitle").textContent = STR.successTitle[l];
   document.getElementById("successDesc").innerHTML = STR.successDesc[l];
   document.getElementById("continueBtn").textContent = STR.continueBtn[l];
+  document.getElementById("qaCallLabel").textContent = STR.qaCallLabel[l];
+  document.getElementById("qaBillLabel").textContent = STR.qaBillLabel[l];
+  document.getElementById("qaOtherLabel").textContent = STR.qaOtherLabel[l];
+  document.getElementById("qaOtherTitle").textContent = STR.qaOtherTitle[l];
+  document.getElementById("qaOtherText").placeholder = STR.qaOtherPlaceholder[l];
+  document.getElementById("qaOtherCancel").textContent = STR.backBtn[l];
+  document.getElementById("qaOtherSend").textContent = STR.qaSendBtn[l];
   if(seat) document.getElementById("seatBadge").textContent = seat + STR.seatBadgeSuffix[l];
 
   Object.keys(nameEls).forEach(function(id){ nameEls[id].textContent = cart[id].names[l]; });
@@ -573,6 +708,102 @@ function openReview(){
 }
 function closeReview(){
   document.getElementById("overlay").classList.remove("show");
+}
+
+/* ====== クイックアクション（呼び出し・会計・その他） ====== */
+let toastTimer = null;
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){ t.classList.remove("show"); }, 2200);
+}
+
+async function sendTelegramText(text){
+  const res = await fetch("https://api.telegram.org/bot" + BOT_TOKEN + "/sendMessage", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ chat_id: CHAT_ID, text: text })
+  });
+  const data = await res.json();
+  if(!data.ok) throw new Error(data.description || "send failed");
+}
+
+async function quickAction(type){
+  if(!seat){
+    document.getElementById("seatScreen").style.display = "flex";
+    return;
+  }
+  const msgMap = { call: STR.qaCallMsg, bill: STR.qaBillMsg };
+  const m = msgMap[type];
+  const text = "🔔 " + m.ja + " / " + m.vi + "\n" + STR.seatWord.ja + "/" + STR.seatWord.vi + ": " + seat + "番";
+  try{
+    await sendTelegramText(text);
+    showToast(STR.qaSentToast[LANG]);
+  } catch(err){
+    showToast(STR.errorMsg[LANG](err.message));
+  }
+}
+
+function openOtherModal(){
+  if(!seat){
+    document.getElementById("seatScreen").style.display = "flex";
+    return;
+  }
+  document.getElementById("qaOtherText").value = "";
+  document.getElementById("qaOtherOverlay").classList.add("show");
+}
+function closeOtherModal(){
+  document.getElementById("qaOtherOverlay").classList.remove("show");
+}
+const MYMEMORY_LANG = { ja:"ja", vi:"vi", en:"en", ko:"ko", zh:"zh-TW" };
+async function translateText(text, sourceCode, targetCode){
+  if(sourceCode === targetCode) return text;
+  try{
+    const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=" + sourceCode + "|" + targetCode;
+    const res = await fetch(url);
+    const data = await res.json();
+    const translated = data && data.responseData && data.responseData.translatedText;
+    return translated || null;
+  } catch(e){
+    return null;
+  }
+}
+
+async function sendOtherRequest(){
+  const val = document.getElementById("qaOtherText").value.trim();
+  if(!val) return;
+  const btn = document.getElementById("qaOtherSend");
+  btn.disabled = true;
+  btn.textContent = STR.sending[LANG];
+
+  const sourceCode = MYMEMORY_LANG[LANG] || "en";
+  const [jaText, viText] = await Promise.all([
+    translateText(val, sourceCode, "ja"),
+    translateText(val, sourceCode, "vi")
+  ]);
+
+  let body = "";
+  if(sourceCode === "ja"){
+    body = "🇯🇵 " + val + (viText ? ("\n🇻🇳 " + viText) : "");
+  } else if(sourceCode === "vi"){
+    body = (jaText ? ("🇯🇵 " + jaText + "\n") : "") + "🇻🇳 " + val;
+  } else {
+    body = (jaText ? ("🇯🇵 " + jaText + "\n") : "") + (viText ? ("🇻🇳 " + viText + "\n") : "") + "(" + STR.qaOrigLabel.ja + ": " + val + ")";
+  }
+
+  const text = "🔔 " + STR.qaOtherMsg.ja + " / " + STR.qaOtherMsg.vi + "\n" +
+    STR.seatWord.ja + "/" + STR.seatWord.vi + ": " + seat + "番\n\n" + body;
+  try{
+    await sendTelegramText(text);
+    closeOtherModal();
+    showToast(STR.qaSentToast[LANG]);
+  } catch(err){
+    showToast(STR.errorMsg[LANG](err.message));
+  }
+  btn.disabled = false;
+  btn.textContent = STR.qaSendBtn[LANG];
 }
 
 async function sendOrder(){
