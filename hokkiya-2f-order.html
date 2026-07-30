@@ -84,6 +84,19 @@
     color:var(--ember);
     background:#FFF8EA;
   }
+  .other-bottom{
+    padding:8px 14px 30px;
+  }
+  .other-bottom button{
+    width:100%;
+    padding:16px;
+    border-radius:16px;
+    border:1.5px dashed var(--gold);
+    background:#FFF8EA;
+    color:var(--ember);
+    font-weight:700;
+    font-size:15px;
+  }
 
   .cat-head{display:flex;align-items:center;gap:8px;margin:22px 16px 10px;color:var(--wine);}
   .cat-head .mark{font-size:18px;}
@@ -267,6 +280,13 @@
     display:flex;justify-content:space-between;padding:14px 16px;
     font-weight:700;font-size:16px;color:var(--wine);border-top:2px solid var(--line);
   }
+  .tax-note{
+    padding:0 16px 10px;
+    margin-top:-8px;
+    font-size:12px;
+    color:var(--ink-soft);
+    text-align:right;
+  }
   .sheet .actions{display:flex;gap:10px;padding:14px 16px calc(14px + env(safe-area-inset-bottom));}
   .sheet .actions button{flex:1;padding:13px;border-radius:12px;border:none;font-weight:700;font-size:15px;}
   .btn-cancel{background:var(--cream-deep);color:var(--ink);}
@@ -346,6 +366,7 @@
     <header><h3 id="reviewTitle">🐻 ご注文内容</h3></header>
     <div class="list" id="reviewList"></div>
     <div class="total-row"><span id="reviewTotalLabel">合計</span><span id="reviewTotal">0đ</span></div>
+    <div class="tax-note" id="reviewTaxNote">※ 表示価格に税金は含まれていません</div>
     <div class="actions">
       <button class="btn-cancel" id="backBtn" onclick="closeReview()">戻る</button>
       <button class="btn-send" id="sendBtn" onclick="sendOrder()">この内容で注文する</button>
@@ -372,6 +393,7 @@
     <header><h3 id="historyTitle">🧾 注文履歴</h3></header>
     <div class="list" id="historyList"></div>
     <div class="total-row"><span id="historyTotalLabel">合計</span><span id="historyTotal">0đ</span></div>
+    <div class="tax-note" id="historyTaxNote">※ 表示価格に税金は含まれていません</div>
     <div class="actions">
       <button class="btn-send" id="historyCloseBtn" onclick="closeHistoryModal()" style="flex:1;">閉じる</button>
     </div>
@@ -412,6 +434,7 @@ const STR = {
   qaCallLabel: { ja:"スタッフを呼ぶ", vi:"Gọi nhân viên", en:"Call staff", ko:"직원 호출", zh:"呼叫服務員" },
   qaBillLabel: { ja:"お会計", vi:"Thanh toán", en:"Bill", ko:"계산서", zh:"結帳" },
   qaOtherLabel: { ja:"その他", vi:"Khác", en:"Other", ko:"기타", zh:"其他" },
+  qaOtherBottomLabel: { ja:"✉️ その他のご要望はこちら", vi:"✉️ Yêu cầu khác tại đây", en:"✉️ Other requests here", ko:"✉️ 기타 요청은 여기", zh:"✉️ 其他需求請點此" },
   qaOtherTitle: { ja:"その他のご要望", vi:"Yêu cầu khác", en:"Other request", ko:"기타 요청 사항", zh:"其他需求" },
   qaOtherPlaceholder: { ja:"内容を入力してください（例：取り皿をください）", vi:"Nhập nội dung (VD: xin thêm chén đĩa)", en:"Enter your request (e.g. more plates please)", ko:"내용을 입력해 주세요 (예: 접시를 더 주세요)", zh:"請輸入內容（例如：請給我小碟子）" },
   qaSendBtn: { ja:"送信する", vi:"Gửi", en:"Send", ko:"전송하기", zh:"傳送" },
@@ -423,6 +446,7 @@ const STR = {
   qaHistoryLabel: { ja:"注文履歴", vi:"Lịch sử đặt món", en:"Order history", ko:"주문 내역", zh:"點餐紀錄" },
   historyTitle: { ja:"🧾 注文履歴", vi:"🧾 Lịch sử đặt món", en:"🧾 Order history", ko:"🧾 주문 내역", zh:"🧾 點餐紀錄" },
   historyTotalLabel: { ja:"合計", vi:"Tổng cộng", en:"Total", ko:"합계", zh:"合計" },
+  taxNote: { ja:"※ 表示価格に税金は含まれていません", vi:"※ Giá hiển thị chưa bao gồm thuế", en:"※ Prices shown do not include tax", ko:"※ 표시된 가격에는 세금이 포함되어 있지 않습니다", zh:"※ 顯示價格不含稅金" },
   historyClearBtn: { ja:"履歴を消す", vi:"Xóa lịch sử", en:"Clear history", ko:"내역 지우기", zh:"清除紀錄" },
   historyCloseBtn: { ja:"閉じる", vi:"Đóng", en:"Close", ko:"닫기", zh:"關閉" },
   historyEmpty: { ja:"まだ注文はありません", vi:"Chưa có đơn hàng nào", en:"No orders yet", ko:"아직 주문이 없습니다", zh:"尚無點餐紀錄" },
@@ -575,6 +599,7 @@ function setLang(l){
   document.getElementById("qaCallLabel").textContent = STR.qaCallLabel[l];
   document.getElementById("qaBillLabel").textContent = STR.qaBillLabel[l];
   document.getElementById("qaOtherLabel").textContent = STR.qaOtherLabel[l];
+  document.getElementById("qaOtherLabelBottom").textContent = STR.qaOtherBottomLabel[l];
   document.getElementById("qaOtherTitle").textContent = STR.qaOtherTitle[l];
   document.getElementById("qaOtherText").placeholder = STR.qaOtherPlaceholder[l];
   document.getElementById("qaOtherCancel").textContent = STR.backBtn[l];
@@ -582,6 +607,8 @@ function setLang(l){
   document.getElementById("qaHistoryLabel").textContent = STR.qaHistoryLabel[l];
   document.getElementById("historyTitle").textContent = STR.historyTitle[l];
   document.getElementById("historyTotalLabel").textContent = STR.historyTotalLabel[l];
+  document.getElementById("reviewTaxNote").textContent = STR.taxNote[l];
+  document.getElementById("historyTaxNote").textContent = STR.taxNote[l];
   document.getElementById("historyCloseBtn").textContent = STR.historyCloseBtn[l];
   renderHistory();
   if(seat) document.getElementById("seatBadge").textContent = seat + STR.seatBadgeSuffix[l];
@@ -692,6 +719,11 @@ otherTab.id = "qaOtherLabel";
 otherTab.textContent = "その他";
 otherTab.onclick = function(){ openOtherModal(); };
 tabsEl.appendChild(otherTab);
+
+const otherBottom = document.createElement("div");
+otherBottom.className = "other-bottom";
+otherBottom.innerHTML = '<button id="qaOtherLabelBottom" onclick="openOtherModal()">✉️ その他のご要望はこちら</button>';
+rootEl.appendChild(otherBottom);
 
 function scrollToCat(i){
   document.querySelectorAll(".tab").forEach(function(t){ t.classList.remove("active"); });
