@@ -79,6 +79,11 @@
     background:#fff;font-size:14px;font-weight:700;white-space:nowrap;
   }
   .tab.active{background:var(--wine);color:#fff;}
+  .tab.tab-other{
+    border-color:var(--gold);
+    color:var(--ember);
+    background:#FFF8EA;
+  }
 
   .cat-head{display:flex;align-items:center;gap:8px;margin:22px 16px 10px;color:var(--wine);}
   .cat-head .mark{font-size:18px;}
@@ -311,6 +316,10 @@
 </header>
 
 <div class="quick-actions">
+  <button onclick="openHistoryModal()">
+    <span class="qa-icon">🧾</span>
+    <span id="qaHistoryLabel">注文履歴</span>
+  </button>
   <button onclick="quickAction('call')">
     <span class="qa-icon">🔔</span>
     <span id="qaCallLabel">スタッフを呼ぶ</span>
@@ -318,10 +327,6 @@
   <button onclick="quickAction('bill')">
     <span class="qa-icon">💰</span>
     <span id="qaBillLabel">お会計</span>
-  </button>
-  <button onclick="openOtherModal()">
-    <span class="qa-icon">✉️</span>
-    <span id="qaOtherLabel">その他</span>
   </button>
 </div>
 
@@ -361,6 +366,17 @@
 </div>
 
 <div class="toast" id="toast"></div>
+
+<div class="overlay" id="historyOverlay">
+  <div class="sheet">
+    <header><h3 id="historyTitle">🧾 注文履歴</h3></header>
+    <div class="list" id="historyList"></div>
+    <div class="total-row"><span id="historyTotalLabel">合計</span><span id="historyTotal">0đ</span></div>
+    <div class="actions">
+      <button class="btn-send" id="historyCloseBtn" onclick="closeHistoryModal()" style="flex:1;">閉じる</button>
+    </div>
+  </div>
+</div>
 
 <div class="success-screen" id="successScreen">
   <div class="mark">✅</div>
@@ -404,6 +420,12 @@ const STR = {
   qaBillMsg: { ja:"お会計をお願いします", vi:"Xin cho tôi thanh toán" },
   qaOtherMsg: { ja:"その他のご要望", vi:"Yêu cầu khác" },
   qaOrigLabel: { ja:"原文" },
+  qaHistoryLabel: { ja:"注文履歴", vi:"Lịch sử đặt món", en:"Order history", ko:"주문 내역", zh:"點餐紀錄" },
+  historyTitle: { ja:"🧾 注文履歴", vi:"🧾 Lịch sử đặt món", en:"🧾 Order history", ko:"🧾 주문 내역", zh:"🧾 點餐紀錄" },
+  historyTotalLabel: { ja:"合計", vi:"Tổng cộng", en:"Total", ko:"합계", zh:"合計" },
+  historyClearBtn: { ja:"履歴を消す", vi:"Xóa lịch sử", en:"Clear history", ko:"내역 지우기", zh:"清除紀錄" },
+  historyCloseBtn: { ja:"閉じる", vi:"Đóng", en:"Close", ko:"닫기", zh:"關閉" },
+  historyEmpty: { ja:"まだ注文はありません", vi:"Chưa có đơn hàng nào", en:"No orders yet", ko:"아직 주문이 없습니다", zh:"尚無點餐紀錄" },
   seatWord: { ja:"席", vi:"Bàn" },
   totalWord: { ja:"合計", vi:"Tổng cộng" }
 };
@@ -557,6 +579,11 @@ function setLang(l){
   document.getElementById("qaOtherText").placeholder = STR.qaOtherPlaceholder[l];
   document.getElementById("qaOtherCancel").textContent = STR.backBtn[l];
   document.getElementById("qaOtherSend").textContent = STR.qaSendBtn[l];
+  document.getElementById("qaHistoryLabel").textContent = STR.qaHistoryLabel[l];
+  document.getElementById("historyTitle").textContent = STR.historyTitle[l];
+  document.getElementById("historyTotalLabel").textContent = STR.historyTotalLabel[l];
+  document.getElementById("historyCloseBtn").textContent = STR.historyCloseBtn[l];
+  renderHistory();
   if(seat) document.getElementById("seatBadge").textContent = seat + STR.seatBadgeSuffix[l];
 
   Object.keys(nameEls).forEach(function(id){ nameEls[id].textContent = cart[id].names[l]; });
@@ -571,6 +598,7 @@ function chooseSeat(s){
   seat = s;
   document.getElementById("seatBadge").textContent = s + STR.seatBadgeSuffix[LANG];
   document.getElementById("seatScreen").style.display = "none";
+  renderHistory();
 }
 (function initSeatFromUrl(){
   const p = new URLSearchParams(location.search).get("seat");
@@ -657,6 +685,13 @@ MENU.forEach(function(cat, ci){
     renderItems(cat.items);
   }
 });
+
+const otherTab = document.createElement("button");
+otherTab.className = "tab tab-other";
+otherTab.id = "qaOtherLabel";
+otherTab.textContent = "その他";
+otherTab.onclick = function(){ openOtherModal(); };
+tabsEl.appendChild(otherTab);
 
 function scrollToCat(i){
   document.querySelectorAll(".tab").forEach(function(t){ t.classList.remove("active"); });
@@ -813,10 +848,12 @@ async function sendOrder(){
 
   let lines = [];
   let total = 0;
+  const orderedItems = [];
   Object.values(cart).forEach(function(it){
     if(it.qty > 0){
       lines.push("・"+it.names.ja+" / "+it.names.vi+" ×"+it.qty);
       total += it.qty * it.price;
+      orderedItems.push({ names: it.names, price: it.price, qty: it.qty });
     }
   });
 
@@ -834,6 +871,7 @@ async function sendOrder(){
     const data = await res.json();
     if(!data.ok) throw new Error(data.description || "send failed");
 
+    addToHistory(orderedItems);
     document.getElementById("overlay").classList.remove("show");
     document.getElementById("successScreen").classList.add("show");
   } catch(err){
@@ -842,6 +880,72 @@ async function sendOrder(){
     btn.disabled = false;
     btn.textContent = STR.sendBtn[LANG];
   }
+}
+
+/* ====== 注文履歴（消すまで端末に保存） ====== */
+function historyKey(){ return "hokkiya_order_history_seat" + seat; }
+function loadHistory(){
+  if(!seat) return [];
+  try{
+    const raw = localStorage.getItem(historyKey());
+    return raw ? JSON.parse(raw) : [];
+  } catch(e){ return []; }
+}
+function saveHistoryList(list){
+  if(!seat) return;
+  try{ localStorage.setItem(historyKey(), JSON.stringify(list)); } catch(e){}
+}
+function addToHistory(items){
+  if(!items.length) return;
+  const list = loadHistory();
+  items.forEach(function(it){
+    list.push({ ja: it.names.ja, vi: it.names.vi, price: it.price, qty: it.qty, time: Date.now() });
+  });
+  saveHistoryList(list);
+  renderHistory();
+}
+function clearHistory(){
+  if(!seat) return;
+  localStorage.removeItem(historyKey());
+  renderHistory();
+}
+function renderHistory(){
+  const listEl = document.getElementById("historyList");
+  const totalEl = document.getElementById("historyTotal");
+  if(!listEl || !totalEl) return;
+  const list = loadHistory();
+  listEl.innerHTML = "";
+  if(list.length === 0){
+    const p = document.createElement("div");
+    p.style.padding = "20px 0";
+    p.style.textAlign = "center";
+    p.style.color = "var(--ink-soft)";
+    p.textContent = STR.historyEmpty[LANG];
+    listEl.appendChild(p);
+    totalEl.textContent = "0đ";
+    return;
+  }
+  let total = 0;
+  list.forEach(function(it){
+    total += it.price * it.qty;
+    const row = document.createElement("div");
+    row.className = "row";
+    const name = LANG === "vi" ? it.vi : it.ja;
+    row.innerHTML = "<span>" + name + " × " + it.qty + "</span><span class=\"n\">" + (it.price*it.qty).toLocaleString() + "đ</span>";
+    listEl.appendChild(row);
+  });
+  totalEl.textContent = total.toLocaleString() + "đ";
+}
+function openHistoryModal(){
+  if(!seat){
+    document.getElementById("seatScreen").style.display = "flex";
+    return;
+  }
+  renderHistory();
+  document.getElementById("historyOverlay").classList.add("show");
+}
+function closeHistoryModal(){
+  document.getElementById("historyOverlay").classList.remove("show");
 }
 
 function resetOrder(){
