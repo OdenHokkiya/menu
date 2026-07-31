@@ -824,11 +824,9 @@ function openOtherModal(){
 function closeOtherModal(){
   document.getElementById("qaOtherOverlay").classList.remove("show");
 }
-const MYMEMORY_LANG = { ja:"ja", vi:"vi", en:"en", ko:"ko", zh:"zh-TW" };
-async function translateText(text, sourceCode, targetCode){
-  if(sourceCode === targetCode) return text;
+async function translateText(text, targetCode){
   try{
-    const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=" + sourceCode + "|" + targetCode;
+    const url = "https://api.mymemory.translated.net/get?q=" + encodeURIComponent(text) + "&langpair=autodetect|" + targetCode;
     const res = await fetch(url);
     const data = await res.json();
     const translated = data && data.responseData && data.responseData.translatedText;
@@ -845,19 +843,16 @@ async function sendOtherRequest(){
   btn.disabled = true;
   btn.textContent = STR.sending[LANG];
 
-  const sourceCode = MYMEMORY_LANG[LANG] || "en";
   const [jaText, viText] = await Promise.all([
-    translateText(val, sourceCode, "ja"),
-    translateText(val, sourceCode, "vi")
+    translateText(val, "ja"),
+    translateText(val, "vi")
   ]);
 
-  let body = "";
-  if(sourceCode === "ja"){
-    body = "🇯🇵 " + val + (viText ? ("\n🇻🇳 " + viText) : "");
-  } else if(sourceCode === "vi"){
-    body = (jaText ? ("🇯🇵 " + jaText + "\n") : "") + "🇻🇳 " + val;
+  let body;
+  if(!jaText && !viText){
+    body = val + "\n(自動翻訳できませんでした / Không thể dịch tự động)";
   } else {
-    body = (jaText ? ("🇯🇵 " + jaText + "\n") : "") + (viText ? ("🇻🇳 " + viText + "\n") : "") + "(" + STR.qaOrigLabel.ja + ": " + val + ")";
+    body = "🇯🇵 " + (jaText || val) + "\n🇻🇳 " + (viText || val);
   }
 
   const text = "🔔 " + STR.qaOtherMsg.ja + " / " + STR.qaOtherMsg.vi + "\n" +
@@ -914,13 +909,19 @@ async function sendOrder(){
   }
 }
 
-/* ====== 注文履歴（消すまで端末に保存） ====== */
+/* ====== 注文履歴（6時間で自動的に消える） ====== */
+const HISTORY_EXPIRY_MS = 6 * 60 * 60 * 1000; // 6時間
 function historyKey(){ return "hokkiya_order_history_seat" + seat; }
 function loadHistory(){
   if(!seat) return [];
   try{
     const raw = localStorage.getItem(historyKey());
-    return raw ? JSON.parse(raw) : [];
+    if(!raw) return [];
+    const list = JSON.parse(raw);
+    const now = Date.now();
+    const fresh = list.filter(function(it){ return (now - it.time) < HISTORY_EXPIRY_MS; });
+    if(fresh.length !== list.length) saveHistoryList(fresh);
+    return fresh;
   } catch(e){ return []; }
 }
 function saveHistoryList(list){
