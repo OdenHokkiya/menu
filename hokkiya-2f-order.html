@@ -4,24 +4,31 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>北寄や 2階オーダー</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Yusei+Magic&family=Zen+Maru+Gothic:wght@400;500;700;900&family=Baloo+2:wght@400;600;700&family=Gaegu:wght@400;700&family=ZCOOL+KuaiLe&display=swap" rel="stylesheet">
 <style>
   :root{
-    --cream:#FBF1DE;
-    --cream-deep:#F3E4C2;
-    --wine:#7A1F1F;
-    --wine-deep:#5C1414;
-    --ember:#C1440E;
-    --ink:#3A2A1E;
-    --ink-soft:#8A7860;
+    --cream:#FBF1DC;
+    --cream-deep:#F0E2C0;
+    --wine:#8B1A1A;
+    --wine-deep:#6e1414;
+    --ember:#8B1A1A;
+    --ink:#3E2A1C;
+    --ink-soft:#9b7a5e;
     --line:#E3CFa0;
-    --gold:#D9A441;
+    --gold:#F0B429;
   }
   *{box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
   html,body{margin:0;padding:0;}
+  body.lang-ja{font-family:'Zen Maru Gothic',sans-serif;}
+  body.lang-vi,body.lang-en{font-family:'Baloo 2',sans-serif;}
+  body.lang-ko{font-family:'Gaegu',sans-serif;}
+  body.lang-zh{font-family:'ZCOOL KuaiLe',sans-serif;}
   body{
     background:var(--cream);
     color:var(--ink);
-    font-family:"Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
+    font-family:'Zen Maru Gothic',"Hiragino Sans","Yu Gothic",-apple-system,BlinkMacSystemFont,sans-serif;
     padding-bottom:96px;
     min-height:100vh;
   }
@@ -49,24 +56,46 @@
   header{
     background:var(--wine);
     color:#fff;
-    padding:18px 16px 14px;
+    padding:18px 16px 10px;
     position:sticky;
     top:0;
     z-index:20;
     box-shadow:0 2px 10px rgba(0,0,0,.15);
+    text-align:center;
   }
-  header .brand{display:flex;align-items:baseline;gap:8px;}
-  header .brand .mark{font-size:20px;}
-  header h1{font-size:19px;margin:0;letter-spacing:.04em;font-weight:700;}
-  header .sub{margin:4px 0 0;font-size:12px;color:#E8C9A0;letter-spacing:.06em;}
+  header .brand{display:flex;flex-direction:column;align-items:center;}
+  header h1{
+    font-family:'Yusei Magic',cursive;
+    font-weight:400;
+    font-size:24px;
+    margin:2px 0 2px;
+    letter-spacing:.06em;
+  }
+  header h1 .lantern{font-size:16px;vertical-align:0;margin:0 4px;}
+  header .brand-en{
+    font-size:10px;
+    letter-spacing:.3em;
+    color:var(--gold);
+    margin:0 0 4px;
+  }
+  header .sub{margin:0;font-size:12px;color:#E8C9A0;letter-spacing:.06em;}
   header .seat-badge{
     position:absolute;top:16px;right:16px;
     background:var(--gold);color:var(--wine-deep);
     font-weight:700;font-size:13px;padding:6px 14px;border-radius:999px;
   }
+  .header-edge{
+    height:10px;
+    background:
+      linear-gradient(135deg, var(--wine) 25%, transparent 25.5%),
+      linear-gradient(225deg, var(--wine) 25%, transparent 25.5%);
+    background-size:12px 12px;
+    background-position:0 0, 6px 0;
+    background-color:var(--cream);
+  }
 
   .tabs{
-    position:sticky;top:98px;z-index:19;
+    position:sticky;top:106px;z-index:19;
     display:flex;gap:8px;overflow-x:auto;
     padding:12px 14px;background:var(--cream);
     border-bottom:1px solid var(--line);
@@ -251,6 +280,99 @@
     font-weight:700;
     font-size:14px;
   }
+  .page-tabs{
+    display:flex;
+    gap:6px;
+    padding:10px 14px 0;
+    overflow-x:auto;
+    background:var(--cream);
+    scrollbar-width:none;
+  }
+  .page-tabs::-webkit-scrollbar{display:none;}
+  .page-tab{
+    flex:none;
+    padding:8px 14px;
+    border-radius:999px 999px 0 0;
+    border:1.5px solid var(--wine);
+    border-bottom:none;
+    background:#fff;
+    color:var(--wine);
+    font-size:13px;
+    font-weight:700;
+    white-space:nowrap;
+  }
+  .page-tab.active{
+    background:var(--wine);
+    color:#fff;
+  }
+  .info-page{
+    padding:18px 16px 40px;
+  }
+  .info-page .lead{
+    font-size:14px;
+    color:var(--ink);
+    line-height:1.7;
+    margin-bottom:20px;
+  }
+  .info-page h2{
+    font-size:17px;
+    color:var(--wine);
+    margin:26px 0 8px;
+  }
+  .info-page h2:first-child{margin-top:0;}
+  .info-page p{
+    font-size:13.5px;
+    line-height:1.7;
+    color:var(--ink);
+    margin:0 0 10px;
+  }
+  .info-card{
+    background:#fff;
+    border:1px solid var(--line);
+    border-radius:16px;
+    padding:14px;
+    margin-bottom:14px;
+    display:flex;
+    gap:12px;
+  }
+  .info-card .icon{
+    width:56px;height:56px;border-radius:12px;background:var(--cream-deep);
+    display:flex;align-items:center;justify-content:center;font-size:26px;flex:none;overflow:hidden;
+  }
+  .info-card .icon img{width:100%;height:100%;object-fit:cover;}
+  .info-card .body{flex:1;min-width:0;}
+  .info-card .badge{
+    display:inline-block;
+    font-size:11px;
+    font-weight:700;
+    color:var(--ember);
+    background:#FFF3DC;
+    border-radius:999px;
+    padding:2px 10px;
+    margin-bottom:4px;
+  }
+  .info-card .name{font-size:15px;font-weight:700;margin-bottom:4px;}
+  .info-card .desc{font-size:12.5px;color:var(--ink-soft);line-height:1.55;}
+  .info-card .price{font-size:14px;font-weight:700;color:var(--ember);margin-top:6px;}
+  .info-card .note{font-size:11.5px;color:var(--ink-soft);margin-top:4px;}
+  .sake-stars{color:var(--gold);font-size:13px;letter-spacing:1px;}
+  .sake-param-row{display:flex;justify-content:space-between;font-size:12.5px;margin-top:3px;}
+  .about-tags{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0 18px;}
+  .about-tag{
+    background:var(--cream-deep);
+    color:var(--wine);
+    font-size:12px;
+    font-weight:700;
+    padding:6px 12px;
+    border-radius:999px;
+  }
+  .steps-list{
+    margin:8px 0 0;
+    padding-left:20px;
+    font-size:13px;
+    color:var(--ink);
+    line-height:1.8;
+  }
   .seat-screen{position:fixed;}
   .seat-screen .mark{font-size:40px;}
   .seat-screen h2{margin:0;font-size:20px;letter-spacing:.04em;}
@@ -309,7 +431,7 @@
   .error-msg{color:#ffd7d7;font-size:13px;margin-top:8px;}
 </style>
 </head>
-<body>
+<body class="lang-ja">
 
 <div class="seat-screen" id="seatScreen">
   <div class="lang-bar lang-bar-seat" id="langBarSeat"></div>
@@ -326,14 +448,15 @@
 
 <header>
   <div class="brand">
-    <span class="mark">🏮</span>
     <div>
-      <h1>北寄や HOKKIYA</h1>
+      <h1><span class="lantern">🏮</span>北寄や<span class="lantern">🏮</span></h1>
+      <p class="brand-en">HOKKIYA</p>
       <p class="sub" id="headerSub">2階オーダー</p>
     </div>
   </div>
   <div class="seat-badge" id="seatBadge">-</div>
 </header>
+<div class="header-edge"></div>
 
 <div class="quick-actions">
   <button onclick="openHistoryModal()">
@@ -350,8 +473,16 @@
   </button>
 </div>
 
+<div class="page-tabs" id="pageTabs">
+  <button class="page-tab active" id="pageTabMenu" onclick="switchPage('menu')">🍽️ メニュー</button>
+  <button class="page-tab" id="pageTabSake" onclick="switchPage('sake')">🍶 SAKE</button>
+  <button class="page-tab" id="pageTabOsusume" onclick="switchPage('osusume')">✨ おすすめ</button>
+  <button class="page-tab" id="pageTabAbout" onclick="switchPage('about')">🏮 お店紹介</button>
+</div>
+
 <div class="tabs" id="tabs"></div>
 <div id="menuRoot"></div>
+<div id="infoRoot" style="display:none;"></div>
 
 <div class="bottombar">
   <div>
@@ -476,41 +607,44 @@ const MENU = [
     [N("自家製さつま揚げ","Chả cá chiên tự làm","Homemade Satsuma-age","수제 사츠마아게","自製薩摩炸魚餅"),48000,"o15.png"],
     [N("つぶ貝","Ốc bulot","Whelk","골뱅이","螺貝"),58000,"o16.png"],
     [N("手巻きロールキャベツ","Bắp cải cuộn","Cabbage Roll","양배추롤","手捲高麗菜捲"),58000,"o17.png"],
+    [N("車麩","Bánh xe gluten lúa mì","Kuruma-fu (Wheat Gluten)","구루마부(밀글루텐)","車麩（麵筋）"),28000],
     [N("おでん7点盛り合わせ","Set oden 7 món","Oden 7-Piece Set","오뎅 7종 모둠","關東煮7品拼盤"),218000]
   ]},
   { cat:N("一品・サラダ","Món khai vị & Salad","Appetizers & Salads","안주・샐러드","小菜・沙拉"), icon:"🥗", items:[
     [N("ラーメンサラダ","Salad mì ramen","Ramen Salad","라멘 샐러드","拉麵沙拉"),78000,"1.png"],
     [N("ラーメンサラダ ハーフ","Salad mì ramen (nửa phần)","Ramen Salad (Half)","라멘 샐러드 하프","拉麵沙拉(半份)"),39000,"1.png"],
-    [N("ツナ大根シーザーサラダ","Salad Caesar cá ngừ củ cải","Tuna & Daikon Caesar Salad","참치무 시저 샐러드","鮪魚蘿蔔凱薩沙拉"),128000,"2.png"],
-    [N("ツナ大根シーザーサラダ ハーフ","Salad Caesar cá ngừ củ cải (nửa phần)","Tuna & Daikon Caesar Salad (Half)","참치무 시저 샐러드 하프","鮪魚蘿蔔凱薩沙拉(半份)"),39000,"2.png"],
     [N("きゅうり浅漬け","Dưa leo muối nhanh","Quick-Pickled Cucumber","오이 아사즈케","小黃瓜淺漬"),48000,"3.png"],
     [N("納豆冷奴","Đậu hũ lạnh natto","Cold Tofu with Natto","낫토 히야얏코","納豆冷豆腐"),58000,"4.png"],
-    [N("炙り明太子の昆布締め","Trứng cá minh thái nướng ủ rong biển","Seared Mentaiko Kombu-Cured","명란 다시마 숙성 아부리","炙燒明太子昆布締"),128000,"5.png"],
     [N("焼きなすお浸し","Cà tím nướng ngâm nước dùng","Grilled Eggplant Ohitashi","구운 가지 오히타시","烤茄子涼拌"),98000,"6.png"],
-    [N("鴨たたき","Vịt áp chảo kiểu tataki","Seared Duck","오리 타타키","炙燒鴨肉"),128000,"7.png"],
-    [N("コーンバター","Bắp xào bơ","Corn Butter","콘버터","奶油玉米"),68000,"8.png"],
-    [N("アスパラバター","Măng tây xào bơ","Asparagus Butter","아스파라거스 버터","奶油蘆筍"),98000,"9.png"]
+    [N("炙り明太子の昆布締め","Trứng cá minh thái nướng ủ rong biển","Seared Mentaiko Kombu-Cured","명란 다시마 숙성 아부리","炙燒明太子昆布締"),128000,"5.png"],
+    [N("四川風よだれ鶏","Gà Tứ Xuyên sốt cay tê (Yodare-dori)","Sichuan-Style Yodare Chicken","쓰촨풍 요다레도리(간장마늘소스 닭)","四川風口水雞"),148000],
+    [N("サーモンルイベ","Cá hồi Ruibe (đông lạnh kiểu Hokkaido)","Salmon Ruibe (Frozen Sashimi)","연어 루이베(홋카이도식 얼린 사시미)","鮭魚露伊貝(北海道凍生魚片)"),168000]
   ]},
   { cat:N("揚げ物・炒め物","Món chiên & xào","Fried & Stir-Fried","튀김・볶음","炸物・炒物"), icon:"🍤", items:[
-    [N("じゃがバター塩辛","Khoai tây bơ mực muối","Butter Potato with Salted Squid","감자버터 시오카라","奶油馬鈴薯鹽辛"),98000,"10.png"],
+    [N("アジフライ","Cá aji chiên xù","Fried Horse Mackerel","전갱이 튀김","竹筴魚炸物"),78000],
+    [N("イカフライ","Mực chiên xù","Fried Squid","오징어 튀김","炸花枝"),88000],
     [N("若鶏ザンギ","Gà chiên kiểu Hokkaido","Hokkaido-Style Fried Chicken","자칭기(홋카이도식 치킨)","北海道炸雞"),98000,"11.png"],
-    [N("たこザンギ","Bạch tuộc chiên","Fried Octopus","문어 자칭기","炸章魚"),118000,"12.png"],
-    [N("塩ホルモン炒め","Nội tạng xào muối","Stir-Fried Salted Offal","소금 호르몬 볶음","鹽味內臟拌炒"),128000,"13.png"]
+    [N("釧路のザンタレ","Gà chiên sốt Zantare kiểu Kushiro","Kushiro-Style Zantare Fried Chicken","구시로 잔타레(단짠소스 치킨)","釧路炸雞醬燒(Zantare)"),108000],
+    [N("たこザンギ","Bạch tuộc chiên","Fried Octopus","문어 자칭기","炸章魚"),118000,"12.png"]
   ]},
   { cat:N("焼き物・名物","Món nướng & đặc sản","Grilled & Specialties","구이・명물","燒烤・招牌菜"), icon:"🔥", items:[
+    [N("コーンバター","Bắp xào bơ","Corn Butter","콘버터","奶油玉米"),68000,"8.png"],
+    [N("アスパラバター","Măng tây xào bơ","Asparagus Butter","아스파라거스 버터","奶油蘆筍"),98000,"9.png"],
+    [N("じゃがバター塩辛","Khoai tây bơ mực muối","Butter Potato with Salted Squid","감자버터 시오카라","奶油馬鈴薯鹽辛"),98000,"10.png"],
+    [N("塩ホルモン","Nội tạng bò muối","Salted Beef Offal","소금 호르몬","鹽味內臟"),128000,"13.png"],
     [N("子持ちししゃも","Cá shishamo trứng","Shishamo Smelt with Roe","알 밴 시샤모","柳葉魚"),128000,"14.png"],
     [N("石狩のちゃんちゃん焼き","Cá hồi Ishikari nướng chanchan","Ishikari Salmon Chanchan-Yaki","이시카리 찬찬야키","石狩鮭魚味噌燒"),158000,"15.png"],
-    [N("北寄貝醤油バター焼き","Sò Hokki nướng bơ xì dầu","Hokki Clam Soy-Butter Grill","北寄조개 간장버터구이","北寄貝醬油奶油燒"),168000,"16.png"],
-    [N("名物ジンギスカン","Thịt cừu nướng Jingisukan","Famous Jingisukan (Lamb BBQ)","명물 징기스칸","名物成吉思汗烤肉"),198000,"17.png"],
-    [N("羅臼の真ほっけ炭火焼き","Cá Hokke Rausu nướng than","Rausu Atka Mackerel Charcoal Grill","라우스 홋케 숯불구이","羅臼真鱈魚炭火燒"),218000,"18.png"],
-    [N("帯広名物！豚丼","Cơm heo Obihiro","Obihiro Pork Rice Bowl","오비히로 명물 부타동","帶廣名物豬肉丼"),148000,"19.png"],
-    [N("札幌チキンスープカレー","Cà ri súp gà Sapporo","Sapporo Chicken Soup Curry","삿포로 치킨 스프카레","札幌雞肉湯咖哩"),218000,"20.png"],
-    [N("根室！エスカロップ","Escalope Nemuro","Nemuro Escalope","네무로 에스카롭","根室黑醋醬豬排飯"),178000,"21.png"],
-    [N("レギュラーバーグディッシュ","Đĩa hamburger steak","Hamburger Steak Plate","함박스테이크 디시","漢堡排套餐"),198000,"22.png"],
-    [N("北海道味噌ラーメン","Mì ramen miso Hokkaido","Hokkaido Miso Ramen","홋카이도 미소라멘","北海道味噌拉麵"),148000,"23.png"],
+    [N("マナガツオ西京焼き","Cá bơn nướng miso Saikyo","Butterfish Saikyo Miso Grill","마나가쓰오 사이쿄야키(미소구이)","鯧魚西京燒"),168000],
+    [N("名物ジンギスカン炒め","Thịt cừu xào kiểu Jingisukan","Famous Jingisukan Stir-Fry (Lamb BBQ)","명물 징기스칸 볶음","名物成吉思汗炒烤肉"),198000,"17.png"],
+    [N("ほっけ炭火焼き","Cá Hokke nướng than","Charcoal-Grilled Atka Mackerel","홋케 숯불구이","花魚炭火燒"),218000,"18.png"],
     [N("鰹節塩昆布おにぎり","Cơm nắm cá bào & rong biển muối","Bonito & Salted Kelp Rice Ball","가츠오부시 소금다시마 오니기리","柴魚鹽昆布飯糰"),68000,"24.png"],
     [N("帆立炊き込み焼きおにぎり","Cơm nắm sò điệp nướng","Grilled Scallop Rice Ball","가리비 다키코미 야키오니기리","干貝炊飯烤飯糰"),98000,"25.png"],
-    [N("秋刀魚の塩焼き","Cá thu đao nướng muối","Grilled Salted Pacific Saury","꽁치 소금구이","鹽烤秋刀魚"),98000,"26.png"]
+    [N("帯広名物！豚丼","Cơm heo Obihiro","Obihiro Pork Rice Bowl","오비히로 명물 부타동","帶廣名物豬肉丼"),148000,"19.png"],
+    [N("北海道名物！味噌ラーメン","Mì ramen miso đặc sản Hokkaido","Hokkaido Famous Miso Ramen","홋카이도 명물 미소라멘","北海道名物味噌拉麵"),148000,"23.png"],
+    [N("三平汁","Súp cá Sanpei-jiru","Sanpei-jiru (Fish & Vegetable Soup)","산페이지루(생선야채국)","三平汁(魚肉蔬菜湯)"),148000],
+    [N("根室！エスカロップ","Escalope Nemuro","Nemuro Escalope","네무로 에스카롭","根室黑醋醬豬排飯"),178000,"21.png"],
+    [N("名物駅弁！茅部いか飯","Cơm mực Kayabe Ikameshi (đặc sản)","Kayabe Ikameshi (Stuffed Squid Rice, Famous Bento)","명물 에키벤! 카야베 이카메시(오징어밥)","名物便當！茅部魷魚飯"),178000],
+    [N("札幌チキンスープカレー","Cà ri súp gà Sapporo","Sapporo Chicken Soup Curry","삿포로 치킨 스프카레","札幌雞肉湯咖哩"),218000,"20.png"]
   ]},
   { cat:N("ドリンク","Đồ uống","Drinks","음료","飲品"), icon:"🍺", groups:[
     { label:N("ビール","Bia","Beer","맥주","啤酒"), items:[
@@ -583,6 +717,7 @@ const langBarSeat = document.getElementById("langBarSeat");
 
 function setLang(l){
   LANG = l;
+  document.body.className = "lang-" + l;
   document.querySelectorAll(".lang-pill").forEach(function(btn){
     btn.classList.toggle("active", btn.getAttribute("data-lang")===l);
   });
@@ -617,6 +752,7 @@ function setLang(l){
   catHeadEls.forEach(function(o){ o.el.textContent = o.n[l]; });
   tabEls.forEach(function(o){ o.el.textContent = o.n[l]; });
   groupLabelEls.forEach(function(o){ o.el.textContent = o.n[l]; });
+  if(typeof renderInfoPage === "function" && currentPage !== "menu") renderInfoPage();
 
   updateBar();
 }
@@ -990,6 +1126,305 @@ function resetOrder(){
   updateBar();
   document.getElementById("successScreen").classList.remove("show");
   window.scrollTo({top:0});
+}
+
+/* ====== SAKE / おすすめ / お店紹介 ページ ====== */
+const PAGE_TITLES = {
+  sake: N("SAKE","SAKE","SAKE","SAKE","SAKE"),
+  osusume: N("✨ 今夜のおすすめ","✨ Đặc biệt tối nay","✨ Tonight's Specials","✨ 오늘 저녁 추천","✨ 今晚推薦"),
+  about: N("北寄や HOKKIYA","北寄や HOKKIYA","北寄や HOKKIYA","北寄や HOKKIYA","北寄や HOKKIYA")
+};
+
+const SAKE_CATCH_MAIN = N(
+  "おでんと北海道料理を引き立てる、厳選の日本酒。今夜の一杯を見つけてみてください。",
+  "Rượu Sake được tuyển chọn kỹ càng để tôn lên hương vị Oden và ẩm thực Hokkaido.",
+  "Carefully selected sake to complement our oden and Hokkaido cuisine.",
+  "오뎅과 홋카이도 요리를 돋보이게 하는 엄선된 사케입니다.",
+  "精心挑選的日本酒，完美襯托關東煮與北海道料理。"
+);
+
+const MOKKIRI_INFO = {
+  title: N("🍶 もっきり飲みとは？","🍶 \"Mokkiri\" là gì?","🍶 What is Mokkiri Style?","🍶 \"못키리\"란 무엇인가?","🍶 什麼是「もっきり」飲法？"),
+  intro: N(
+    "北寄やでは、日本酒をもっきりスタイルでお出ししています。升にグラスを置いて、なみなみと注ぐ——日本の居酒屋ならではの飲み方です。",
+    "Tại Hokkiya, rượu sake được phục vụ theo phong cách \"mokkiri\" — đặt ly vào hộp gỗ masu và rót đầy tràn. Đây là nét văn hóa izakaya truyền thống của Nhật Bản.",
+    "At Hokkiya, sake is served in the \"mokkiri\" style — a glass placed in a wooden masu box, filled to overflowing. Pure izakaya tradition.",
+    "홋키야에서는 일본 사케를 \"못키리\" 스타일로 제공합니다 — 나무 마스 상자에 유리잔을 올려 넘치도록 가득 따르는, 이자카야 전통의 음용법입니다.",
+    "在北寄や，日本酒以「もっきり」方式提供——將酒杯放入木製升杯中，滿滿注入直至溢出。這是道地日本居酒屋的飲酒文化。"
+  ),
+  history: N(
+    "「もっきり」は江戸時代の量り売り文化から生まれた言葉。グラスからあふれるほど注ぐのは、お客さんへの「たっぷりどうぞ」という気持ちの表れです。",
+    "\"Mokkiri\" xuất phát từ văn hóa bán đo lường thời Edo. Rót tràn ly là cách nói \"mời bạn thật nhiều\" — thể hiện tấm lòng hiếu khách hào phóng.",
+    "\"Mokkiri\" comes from Edo-period measuring culture. Pouring until it overflows is a way of saying \"plenty for you!\" — the spirit of generous hospitality.",
+    "\"못키리\"는 에도시대의 계량 판매 문화에서 유래한 말입니다. 잔이 넘칠 정도로 따르는 것은 \"많이 드세요!\"라는 마음의 표현입니다.",
+    "「もっきり」源自江戶時代的量賣文化。注得滿溢，是對客人說「請盡情享用」的心意表現。"
+  ),
+  free: N(
+    "飲み方に決まりはありません。まずグラスから、あふれた分は升に溜まるのでそちらも。升から直接飲んでもOKです。",
+    "Không có cách uống cố định. Bắt đầu với ly, sau đó nhấp phần tràn đọng trong hộp masu. Uống thẳng từ hộp masu cũng hoàn toàn ổn!",
+    "There's no right or wrong way. Start with the glass, then sip the overflow from the masu. Drinking straight from the masu is perfectly fine too!",
+    "마시는 방법에 정해진 규칙은 없습니다. 먼저 잔에서 마시고, 마스에 고인 것도 마셔보세요. 마스에서 직접 마셔도 OK!",
+    "喝法沒有固定規則。先從杯中飲起，溢出的酒積在升杯中，也請享用。直接從升杯飲用也完全沒問題！"
+  ),
+  stepsLabel: N("飲み方ステップ","Cách thưởng thức","How to Drink","마시는 방법","飲用步驟"),
+  steps: [
+    N("グラスから飲む","Uống từ ly","Drink from the glass","잔에서 마신다","從杯中飲"),
+    N("升に溜まった分も飲む","Nhấp phần tràn trong hộp masu","Sip the overflow in the masu","마스에 고인 분량도 마신다","飲升杯中積存的酒"),
+    N("升から直接飲んでもOK","Uống thẳng từ masu — hoàn toàn OK!","Drink straight from the masu — totally OK!","마스에서 직접 마셔도 OK","直接從升杯飲用也OK")
+  ]
+};
+
+const SAKE_SERVING_INFO = {
+  atsukanTitle: N("風情を感じる「熱燗（Atsukan）」","Thưởng thức \"Atsukan\" ấm áp","Warm & Cosy: Atsukan (Heated Sake)","정취 넘치는 \"아츠캉\"（뜨겁게 데운 사케）","感受風情的「熱燗（Atsukan）」"),
+  atsukanDesc: N(
+    "日本酒を温めることで、お米の旨味と香りがさらに引き立ちます。肌寒い夜や、熱々のおでんのお供に。ご希望の方はスタッフまでお気軽にお申し付けください。",
+    "Hâm nóng sake làm đậm thêm umami và hương vị gạo. Hoàn hảo vào đêm se lạnh bên cạnh oden nóng hổi. Hãy gọi cho nhân viên!",
+    "Warming sake deepens its rice umami and aroma. Perfect on a cool night alongside piping-hot oden. Just ask your server!",
+    "사케를 데우면 쌀의 감칠맛과 향이 더욱 진해집니다. 쌀쌀한 밤이나 뜨거운 오뎅과 함께하기에 완벽합니다. 스태프에게 말씀해 주세요!",
+    "加熱日本酒能使米的旨味與香氣更加突出。涼夜裡搭配熱騰騰的關東煮最是享受。請告知工作人員！"
+  ),
+  atsukanTip: N(
+    "💡 とっくり（徳利）とは？：日本酒を温めてキープするための、伝統的な可愛い小瓶のことです。お連れ様同士で注ぎ合う居酒屋文化もお楽しみください。",
+    "💡 Tokkuri là gì? Một bình gốm truyền thống Nhật Bản dùng để hâm và rót sake. Rót cho nhau là nét văn hóa ấm áp của izakaya!",
+    "💡 What is a Tokkuri? A traditional flask used to warm and serve sake. Pouring for each other is a cherished izakaya custom!",
+    "💡 도쿠리란? 사케를 데우고 제공하는 전통 일본 도자기 플라스크입니다. 서로에게 따라주는 이자카야 문화도 즐겨보세요!",
+    "💡 什麼是德利（Tokkuri）？用於溫熱和盛裝日本酒的日本傳統陶瓷小瓶。互相斟酒是居酒屋珍貴的文化習俗！"
+  ),
+  dashiTitle: N("当店名物：レトロで粋な「出汁割り（Dashi-Wari）」","Đặc sản quán: \"Dashi-Wari\" kiểu retro phong cách","House Specialty: Retro & Chic \"Dashi-Wari\"","가게 명물：레트로하고 멋진 \"다시와리（Dashi-Wari）\"","本店名物：復古有情調的「出汁割り（Dashi-Wari）」"),
+  dashiDesc: N(
+    "少し残したお酒に、当店自慢の「熱々のおでん出汁」を注いで味わう特別な飲み方です。ご自身の好きな黄金比率で、お酒に出汁を注いでお楽しみください。ぜひ最後の締めにスタッフまでお声がけください！",
+    "Rót nước dùng oden nóng hổi vào sake còn lại và thưởng thức sự kết hợp đặc biệt này. Tự điều chỉnh tỷ lệ theo sở thích. Gọi nhân viên để kết thúc bữa tối hoàn hảo!",
+    "Pour our signature piping-hot oden dashi into your remaining sake and savour a truly special combination. Choose your own golden ratio. Ask your server for the perfect finish to your evening!",
+    "조금 남긴 술에 당점 자랑의 뜨거운 오뎅 다시를 부어 즐기는 특별한 음용법입니다. 좋아하는 비율로 다시를 부어 즐겨보세요.",
+    "將當店自豪的熱騰騰關東煮出汁注入剩餘的酒中，享受這特別的飲法。按喜好調出黃金比例。請在最後收尾時叫工作人員！"
+  ),
+  storyTitle: N("北寄やの日本酒が「山梨産」である理由","Tại sao Hokkiya chọn rượu Sake từ Yamanashi","Why Hokkiya Chooses Sake from Yamanashi","홋키야의 사케가 「야마나시산」인 이유","為何北寄やの日本酒選自「山梨」"),
+  storyDesc: N(
+    "当店のベトナム人オーナーは、かつて日本で20年間という長い時間を過ごしました。その大切な日々の中で、最も深く心を結んだ「第二の故郷」、それが山梨県です。南アルプスの清らかな名水と豊かな自然にはぐくまれた山梨の地酒は、どれもお米の優しい旨味が詰まった傑作ばかり。オーナーが日本で愛し、感動した本物の味わいを、今度はここホーチミンで皆さまにお届けします。",
+    "Chủ người Việt của chúng tôi đã trải qua 20 năm quý giá tại Nhật Bản. Tỉnh Yamanashi trở thành \"quê hương thứ hai\" thật sự. Những hương vị chân thực ông đã yêu thương tại Nhật Bản, nay ông mang đến cho quý khách tại TP. Hồ Chí Minh.",
+    "Our Vietnamese owner spent 20 precious years in Japan. Yamanashi Prefecture became a true \"second home\" — close to his heart. The authentic flavours he loved and cherished in Japan, he now brings to you here in Ho Chi Minh City.",
+    "저희 베트남인 오너는 일본에서 20년이라는 소중한 시간을 보냈습니다. 야마나시현은 \"제2의 고향\"이 되었습니다. 오너가 일본에서 사랑하고 감동한 진짜 맛을, 이제 호치민에서 여러분께 전해드립니다.",
+    "本店的越南籍老闆曾在日本度過了珍貴的20年時光。山梨縣成為他心中真正的「第二故鄉」。老闆在日本深愛、為之感動的真實風味，如今在胡志明市與您共享。"
+  )
+};
+
+const SAKE_DATA_SLIM = [
+  {
+    name: "甲斐の地酒 男山", label: "純米酒",
+    catch: N("スッキリ爽快！北海道の味に最も寄り添う辛口","Sảng khoái! Rượu khô hoàn hảo với ẩm thực Hokkaido","Crisp & Clean! The Dry Sake That Pairs Best with Hokkaido Cuisine","상쾌하고 깔끔! 홋카이도 요리에 최고로 어울리는 드라이 사케","清爽暢快！最適合搭配北海道料理的辛口"),
+    desc: N(
+      "米の旨味がしっかりありながら、後味は驚くほどキレ味がよくスッキリ！ジンギスカンや海鮮など、脂の乗ったお料理と相性抜群です。",
+      "Vị umami gạo đậm đà, hậu vị trong trẻo bất ngờ. Hoàn hảo với Jingisukan hay hải sản.",
+      "Rich rice umami with a clean finish — perfect with Genghis Khan or seafood.",
+      "쌀의 감칠맛이 풍부하면서도 뒷맛은 놀랍도록 깔끔합니다.",
+      "米的旨味扎實，餘韻出乎意料地清爽。最適合搭配成吉思汗烤肉或海鮮。"
+    ),
+    params: [{ label: N("キレ","Độ khô","Dryness","드라이","爽口度"), stars: 5 }, { label: N("フルーティー","Trái cây","Fruity","과일향","果香"), stars: 2 }]
+  },
+  {
+    name: "七賢 絹の味", label: "純米大吟醸",
+    catch: N("まるで絹のよう。フルーティーで贅沢な最高峰の一杯","Mềm như lụa — sake thuần mỹ đỉnh cao đầy hương trái cây","Smooth as Silk — A Fruity, Luxurious Daiginjo","비단처럼 부드럽다. 최고급 다이긴조의 과일향","猶如絲綢般柔順，果香馥郁的頂級純米大吟釀"),
+    desc: N(
+      "白州の名水で仕込まれた、絹のように滑らかで華やかな純米大吟醸。日本酒を飲み慣れていない方にも大人気です。",
+      "Được ủ với nước tinh khiết Hakushu, mượt mà và thơm như tơ lụa. Rất được ưa thích bởi người mới uống.",
+      "Brewed with pure Hakushu water, silky smooth and fragrant. A favourite among beginners.",
+      "하쿠슈의 맑은 물로 빚은, 비단처럼 부드럽고 화려한 순미대긴조입니다.",
+      "以白州名水釀造，絲滑柔順且香氣馥郁，深受初學者及女性喜愛。"
+    ),
+    params: [{ label: N("フルーティー","Trái cây","Fruity","과일향","果香"), stars: 5 }, { label: N("飲みやすさ","Dễ uống","Easy to Drink","마시기 쉬움","易飲度"), stars: 5 }]
+  },
+  {
+    name: "大冠（たいかん）", label: "普通酒",
+    catch: N("おでんの相棒！出汁と溶け合う万能の旨口酒","Người bạn đồng hành của Oden!","The Perfect Oden Companion!","오뎅의 단짝！","關東煮的最佳拍檔！"),
+    desc: N(
+      "熱々おでんに合わせるために選んだ、糖類無添加で米本来の旨味が詰まったお酒。熱燗や出汁割りでも楽しめます！",
+      "Được chọn để kết hợp với oden nóng hổi, sake không thêm đường này chứa đầy umami tự nhiên.",
+      "Chosen to pair with our piping-hot oden, this no-added-sugar sake is packed with rice umami.",
+      "뜨거운 오뎅을 위해 엄선한, 무가당 쌀 본연의 감칠맛이 가득한 술입니다.",
+      "專為搭配熱騰騰關東煮而選，無添加糖，充滿米的天然旨味。"
+    ),
+    params: [{ label: N("コク","Độ đậm","Depth","깊이감","醇厚度"), stars: 5 }, { label: N("キレ","Độ khô","Dryness","드라이","爽口度"), stars: 3 }]
+  }
+];
+
+const OSUSUME_DATA_SLIM = [
+  {
+    img: "11.png",
+    name: N("若鶏ザンギ","Gà chiên Zangi","Hokkaido-Style Fried Chicken","홋카이도식 자칭이 치킨","北海道炸雞 (Zangi)"),
+    badge: N("🍗 肉料理の大定番","🍗 Món gà kinh điển","🍗 House Favourite","🍗 인기 치킨","🍗 必點招牌"),
+    desc: N(
+      "生姜とニンニクの特製タレに漬け込んで、カラッとジューシーに揚げた北海道風の鶏唐揚げ。冷たいビールとよく合います！",
+      "Thịt gà ướp trong nước sốt gừng tỏi đặc biệt, chiên giòn rụm mà vẫn mọng nước.",
+      "Marinated in our special ginger-garlic sauce, fried golden crisp yet juicy inside.",
+      "생강과 마늘 특제 소스에 재운 홋카이도식 닭 튀김. 차가운 맥주와 최고의 궁합!",
+      "雞肉醃漬於生薑大蒜特製醬汁中，炸得外酥內嫩多汁。搭配冰啤酒絕配！"
+    ),
+    price: 98000, note: null
+  },
+  {
+    img: "1.png",
+    name: N("ラーメンサラダ","Ramen Salad","Ramen Salad","라멘 샐러드","拉麵沙拉"),
+    badge: N("🥗 北海道の定番サラダ","🥗 Salad Hokkaido đặc trưng","🥗 Hokkaido Classic","🥗 홋카이도 클래식 샐러드","🥗 北海道必吃沙拉"),
+    desc: N(
+      "冷たいラーメンの麺とシャキシャキ野菜を、濃厚な胡麻ドレッシングで楽しむ北海道の定番サラダ。",
+      "Salad đặc trưng của Hokkaido với mì ramen lạnh và rau giòn, trộn cùng sốt mè đậm đà.",
+      "A Hokkaido classic of chilled ramen noodles and crisp vegetables in rich sesame dressing.",
+      "차가운 라멘 면과 아삭한 채소를 진한 참깨 드레싱으로 즐기는 대표 샐러드.",
+      "北海道經典沙拉，冰涼拉麵配爽脆蔬菜，搭配濃郁芝麻醬。"
+    ),
+    price: 78000,
+    note: N("💡 ハーフサイズあります（スタッフへ）","💡 Có phần nửa khẩu phần — hỏi nhân viên","💡 Half size available — just ask!","💡 하프 사이즈 있습니다","💡 提供半份 — 請告知工作人員")
+  }
+];
+
+const GOOGLE_REVIEW_URL = 'https://maps.app.goo.gl/iLNeJan3mxJFCQnv9?g_st=ic';
+
+const ABOUT_INFO = {
+  headline: N("ご来店ありがとうございました！","Cảm Ơn Bạn Đã Đến Quán!","Thank You for Visiting!","방문해 주셔서 감사합니다!","感謝您的光臨！"),
+  intro: N(
+    "北寄やへようこそ！当店は、北海道料理とおでんを気軽に楽しめるお店です。素材の旨味を活かした料理と、出汁が自慢のホッと温まるおでんで、ホーチミンにいながら北海道の味をお楽しみいただけます。今夜は北の大地ならではの最高の味わいを、ごゆっくりご堪能ください。",
+    "Hokkiya là quán ăn phong cách thoải mái tại TP.HCM, chuyên về ẩm thực Hokkaido và oden. Chúng tôi mang đến hương vị ấm áp của vùng đất phía bắc Nhật Bản, được chế biến tỉ mỉ từ từng nguyên liệu.",
+    "Hokkiya is a casual spot in Ho Chi Minh City serving Hokkaido cuisine and oden. We bring the comforting flavours of Japan's north, made with care for every ingredient.",
+    "홋키야는 호치민시에서 홋카이도 요리와 오뎅을 편안하게 즐길 수 있는 가게입니다. 일본 북쪽 지방의 따뜻한 맛을, 정성껏 만든 요리로 전해드립니다.",
+    "北寄や是位於胡志明市的休閒餐廳，專營北海道料理與關東煮。我們用心對待每一份食材，將日本北方的溫暖滋味呈現給您。"
+  ),
+  cards: [
+    { icon:"🐻", t: N("北海道の味","Hương Vị Hokkaido","Hokkaido Flavors","홋카이도의 맛","北海道風味"), s: N("本場のジンギスカンやホッキ貝料理をホーチミンで！","Thưởng thức Jingisukan và Hokkigai chính hiệu ngay tại TP.HCM!","Authentic Genghis Khan & Hokkigai in Ho Chi Minh City!","본고장의 징기스칸과 홋키가이를 호치민에서!","在胡志明市享用道地的成吉思汗烤肉和北寄貝料理！") },
+    { icon:"🍢", t: N("自家製おでん","Oden Tự Làm","Homemade Oden","수제 오뎅","自製關東煮"), s: N("毎日じっくり引いた出汁が自慢。迷ったらまずは大根から！","Tự hào với nước dùng nấu kỹ mỗi ngày. Hãy bắt đầu với củ cải!","Proud of our daily slow-brewed broth. Start with the daikon!","매일 정성껏 우린 육수가 자랑. 먼저 무부터 드셔보세요!","每日精心熬製的高湯是本店的驕傲。不知道點什麼，先試試蘿蔔！") },
+    { icon:"🍻", t: N("アットホームな空間","Không Gian Ấm Cúng","Cozy Atmosphere","편안한 분위기","溫馨氛圍"), s: N("我が家のようにホッと一息つける時間をお過ごしください。","Hãy tận hưởng khoảnh khắc thư giãn như ở nhà.","Take your time and relax just like you are at home.","집처럼 편안하게 쉬어가는 시간을 보내세요.","請在這裡享受如在家般放鬆的美好時光。") }
+  ],
+  reviewCtaSub: N(
+    "お料理をお待ちの間や、美味しかった！の記念に、ぜひ率直なご感想をお聞かせください。スタッフみんなで毎日楽しみに読んでいます！",
+    "Chỉ mất 30 giây, nhưng ý kiến của bạn là động lực lớn cho chúng tôi.",
+    "It only takes 30 seconds, and it means the world to us.",
+    "30초면 충분합니다. 여러분의 목소리가 큰 힘이 됩니다.",
+    "只需30秒，您的意見是我們最大的鼓勵。"
+  ),
+  reviewCtaLabel: N("Googleレビューを書く","Viết Đánh Giá Trên Google","Write a Google Review","Google 리뷰 작성하기","撰寫Google評論"),
+  reviewThanksNote: N("またのご来店をお待ちしております！","Mong sớm được gặp lại bạn!","We hope to see you again soon!","다시 뵙기를 기다리고 있겠습니다!","期待您再次光臨！"),
+  addressLabel: N("住所","Địa chỉ","Address","주소","地址"),
+  hotlineLabel: N("電話","Hotline","Hotline","전화","電話"),
+  address: "7/100 Lê Thánh Tôn, Phường Sài Gòn, TP.HCM",
+  hotline: "0792-515-838"
+};
+
+function starsHtml(n){
+  let s = "";
+  for(let i=0;i<5;i++) s += (i<n ? "★" : "☆");
+  return s;
+}
+
+function renderSakePage(){
+  let html = '<div class="info-page">';
+  html += '<p class="lead">' + SAKE_CATCH_MAIN[LANG] + '</p>';
+  html += '<h2>' + MOKKIRI_INFO.title[LANG] + '</h2>';
+  html += '<p>' + MOKKIRI_INFO.intro[LANG] + '</p>';
+  html += '<p>' + MOKKIRI_INFO.history[LANG] + '</p>';
+  html += '<p>' + MOKKIRI_INFO.free[LANG] + '</p>';
+  html += '<p style="font-weight:700;margin-bottom:2px;">' + MOKKIRI_INFO.stepsLabel[LANG] + '</p>';
+  html += '<ol class="steps-list">' + MOKKIRI_INFO.steps.map(function(s){ return '<li>' + s[LANG] + '</li>'; }).join('') + '</ol>';
+
+  SAKE_DATA_SLIM.forEach(function(s){
+    html += '<div class="info-card"><div class="icon">🍶</div><div class="body">';
+    html += '<span class="badge">' + s.label + '</span>';
+    html += '<div class="name">' + s.name + '</div>';
+    html += '<div class="desc"><strong>' + s.catch[LANG] + '</strong></div>';
+    html += '<div class="desc" style="margin-top:6px;">' + s.desc[LANG] + '</div>';
+    s.params.forEach(function(p){
+      html += '<div class="sake-param-row"><span>' + p.label[LANG] + '</span><span class="sake-stars">' + starsHtml(p.stars) + '</span></div>';
+    });
+    html += '</div></div>';
+  });
+
+  html += '<h2>🍶 ' + SAKE_SERVING_INFO.atsukanTitle[LANG] + '</h2>';
+  html += '<p>' + SAKE_SERVING_INFO.atsukanDesc[LANG] + '</p>';
+  html += '<div class="info-card" style="display:block;"><div class="desc">' + SAKE_SERVING_INFO.atsukanTip[LANG] + '</div></div>';
+
+  html += '<h2>🫙 ' + SAKE_SERVING_INFO.dashiTitle[LANG] + '</h2>';
+  html += '<p>' + SAKE_SERVING_INFO.dashiDesc[LANG] + '</p>';
+
+  html += '<h2>🏔️ ' + SAKE_SERVING_INFO.storyTitle[LANG] + '</h2>';
+  html += '<p>' + SAKE_SERVING_INFO.storyDesc[LANG] + '</p>';
+  html += '</div>';
+  return html;
+}
+
+function renderOsusumePage(){
+  let html = '<div class="info-page">';
+  html += '<p class="lead">' + N(
+    "スタッフおすすめの2品です。迷ったらまずこれを！",
+    "Hai món được nhân viên giới thiệu. Hãy thử ngay!",
+    "Staff picks for tonight. A great place to start!",
+    "직원이 추천하는 2가지 메뉴입니다.",
+    "員工推薦的兩道菜。不知道點什麼，就從這裡開始！"
+  )[LANG] + '</p>';
+  OSUSUME_DATA_SLIM.forEach(function(item){
+    html += '<div class="info-card"><div class="icon"><img src="' + IMG_BASE + item.img + '" alt=""></div><div class="body">';
+    html += '<span class="badge">' + item.badge[LANG] + '</span>';
+    html += '<div class="name">' + item.name[LANG] + '</div>';
+    html += '<div class="desc">' + item.desc[LANG] + '</div>';
+    if(item.note) html += '<div class="note">' + item.note[LANG] + '</div>';
+    html += '<div class="price">' + item.price.toLocaleString() + 'đ</div>';
+    html += '</div></div>';
+  });
+  html += '</div>';
+  return html;
+}
+
+function renderAboutPage(){
+  let html = '<div class="info-page">';
+  html += '<h2>' + ABOUT_INFO.headline[LANG] + '</h2>';
+  html += '<p>' + ABOUT_INFO.intro[LANG] + '</p>';
+  ABOUT_INFO.cards.forEach(function(card){
+    html += '<div class="info-card"><div class="icon">' + card.icon + '</div><div class="body">';
+    html += '<div class="name">' + card.t[LANG] + '</div>';
+    html += '<div class="desc">' + card.s[LANG] + '</div>';
+    html += '</div></div>';
+  });
+  html += '<h2>⭐️ ' + ABOUT_INFO.reviewCtaLabel[LANG] + '</h2>';
+  html += '<p>' + ABOUT_INFO.reviewCtaSub[LANG] + '</p>';
+  html += '<p style="text-align:center;font-size:18px;margin:6px 0 12px;">⭐️⭐️⭐️⭐️⭐️</p>';
+  html += '<p style="text-align:center;"><a href="' + GOOGLE_REVIEW_URL + '" target="_blank" rel="noopener" style="display:inline-block;background:var(--wine);color:#fff;font-weight:700;padding:12px 24px;border-radius:999px;text-decoration:none;font-size:14px;">' + ABOUT_INFO.reviewCtaLabel[LANG] + '</a></p>';
+  html += '<p style="text-align:center;margin-top:16px;">🍢 ' + ABOUT_INFO.reviewThanksNote[LANG] + '</p>';
+  html += '<h2>' + ABOUT_INFO.addressLabel[LANG] + '</h2><p>' + ABOUT_INFO.address + '</p>';
+  html += '<h2>' + ABOUT_INFO.hotlineLabel[LANG] + '</h2><p>' + ABOUT_INFO.hotline + '</p>';
+  html += '</div>';
+  return html;
+}
+
+let currentPage = "menu";
+function switchPage(page){
+  currentPage = page;
+  document.getElementById("pageTabMenu").classList.toggle("active", page === "menu");
+  document.getElementById("pageTabSake").classList.toggle("active", page === "sake");
+  document.getElementById("pageTabOsusume").classList.toggle("active", page === "osusume");
+  document.getElementById("pageTabAbout").classList.toggle("active", page === "about");
+
+  const tabsEl2 = document.getElementById("tabs");
+  const menuRootEl = document.getElementById("menuRoot");
+  const infoRootEl = document.getElementById("infoRoot");
+  const quickActionsEl = document.querySelector(".quick-actions");
+
+  if(page === "menu"){
+    tabsEl2.style.display = "";
+    menuRootEl.style.display = "";
+    infoRootEl.style.display = "none";
+    quickActionsEl.style.display = "";
+  } else {
+    tabsEl2.style.display = "none";
+    menuRootEl.style.display = "none";
+    quickActionsEl.style.display = "none";
+    infoRootEl.style.display = "";
+    renderInfoPage();
+  }
+  window.scrollTo({top:0});
+}
+
+function renderInfoPage(){
+  const infoRootEl = document.getElementById("infoRoot");
+  if(currentPage === "sake") infoRootEl.innerHTML = renderSakePage();
+  else if(currentPage === "osusume") infoRootEl.innerHTML = renderOsusumePage();
+  else if(currentPage === "about") infoRootEl.innerHTML = renderAboutPage();
 }
 
 updateBar();
