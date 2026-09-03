@@ -25,8 +25,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
 .stock-item.danger{border-left-color:var(--danger);background:var(--danger-bg)}
 .stock-item.warn{border-left-color:var(--warn);background:var(--warn-bg)}
 .stock-item .names{flex:1}
-.name-ja{font-size:15px;font-weight:600}
-.name-vi{font-size:12px;color:var(--text-sub);margin-top:1px}
+.name-vi{font-size:15px;font-weight:600}
+.name-ja{font-size:12px;color:var(--text-sub);margin-top:1px}
 .unit-tag{font-size:11px;color:var(--text-sub)}
 .stock-qty{font-size:30px;font-weight:800;min-width:44px;text-align:right;color:var(--navy)}
 .stock-item.danger .stock-qty{color:var(--danger)}
@@ -107,6 +107,24 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
 /* toast */
 #toast{position:fixed;bottom:calc(var(--nav-h) + 12px);left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 20px;border-radius:40px;font-size:14px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;white-space:nowrap;pointer-events:none}
 #toast.show{opacity:1}
+/* ocr overlay */
+#ocr-ov{display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;align-items:flex-end;justify-content:center}
+#ocr-ov.open{display:flex}
+.ocr-sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:20px 16px 36px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto}
+.ocr-title{font-size:17px;font-weight:700;margin-bottom:4px}
+.ocr-sub{font-size:12px;color:var(--text-sub);margin-bottom:16px}
+.upload-area{border:2px dashed var(--border);border-radius:var(--r);padding:32px 16px;text-align:center;cursor:pointer;background:var(--bg);transition:border-color .2s}
+.upload-area:active{border-color:var(--accent)}
+.upload-area .icon{font-size:36px;margin-bottom:8px}
+.upload-area p{font-size:14px;color:var(--text-sub)}
+.ocr-reading{text-align:center;padding:32px 0}
+.ocr-spinner{font-size:32px;animation:spin 1s linear infinite;display:inline-block}
+@keyframes spin{to{transform:rotate(360deg)}}
+.ocr-result-item{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--border)}
+.ocr-result-item:last-child{border-bottom:none}
+.ocr-badge{font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700}
+.ocr-badge.matched{background:#eafaf1;color:var(--ok)}
+.ocr-badge.unmatched{background:#fef9e7;color:var(--warn)}
 .empty{text-align:center;padding:40px 20px;color:var(--text-sub)}
 .mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
 </style>
@@ -127,19 +145,19 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
 
 <nav class="nav">
   <button class="nav-btn active" onclick="go('stock')"    data-s="stock">
-    <span class="icon">🧊</span><span>在庫</span><span style="font-size:9px;opacity:.8">Tồn kho</span>
+    <span class="icon">🧊</span><span style="font-size:10px">Tồn kho</span><span style="font-size:9px;opacity:.8">在庫</span>
   </button>
   <button class="nav-btn" onclick="go('report')"   data-s="report">
-    <span class="icon">📝</span><span>残数報告</span><span style="font-size:9px;opacity:.8">Báo số</span>
+    <span class="icon">📝</span><span style="font-size:10px">Báo số</span><span style="font-size:9px;opacity:.8">残数報告</span>
   </button>
   <button class="nav-btn" onclick="go('delivery')" data-s="delivery">
-    <span class="icon">📦</span><span>納品</span><span style="font-size:9px;opacity:.8">Nhận hàng</span>
+    <span class="icon">📦</span><span style="font-size:10px">Nhận hàng</span><span style="font-size:9px;opacity:.8">納品</span>
   </button>
   <button class="nav-btn" onclick="go('sales')"    data-s="sales">
-    <span class="icon">🧾</span><span>販売</span><span style="font-size:9px;opacity:.8">Bán hàng</span>
+    <span class="icon">🧾</span><span style="font-size:10px">Bán hàng</span><span style="font-size:9px;opacity:.8">販売</span>
   </button>
   <button class="nav-btn" onclick="go('admin')"    data-s="admin">
-    <span class="icon">⚙️</span><span>管理</span><span style="font-size:9px;opacity:.8">Quản lý</span>
+    <span class="icon">⚙️</span><span style="font-size:10px">Quản lý</span><span style="font-size:9px;opacity:.8">管理</span>
   </button>
 </nav>
 
@@ -165,6 +183,24 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
     <p style="font-size:13px;color:var(--text-sub);margin-bottom:16px">冷凍庫の実在庫を数えて入力してください。<br><span style="font-size:12px">Hãy đếm và nhập số lượng thực tế trong kho lạnh.</span></p>
     <div id="init-list"></div>
     <div class="mt16"><button class="btn btn-primary" onclick="completeInit()">登録完了 / Hoàn tất đăng ký</button></div>
+  </div>
+</div>
+
+<!-- OCR overlay -->
+<div id="ocr-ov">
+  <div class="ocr-sheet">
+    <div class="ocr-title">📷 伝票を読み取る / Đọc phiếu giao hàng</div>
+    <div class="ocr-sub">TOSHIROから届いた伝票の写真をアップロードしてください。<br>Tải ảnh phiếu giao hàng từ TOSHIRO lên.</div>
+    <div id="ocr-body">
+      <label class="upload-area" for="ocr-file-input">
+        <div class="icon">📄</div>
+        <p>タップして写真を選択<br><span style="font-size:12px">Nhấn để chọn ảnh</span></p>
+      </label>
+      <input id="ocr-file-input" type="file" accept="image/*" style="display:none" onchange="readDeliveryImage(this)">
+    </div>
+    <div class="mt12">
+      <button class="btn btn-ghost" onclick="closeOcr()">キャンセル / Hủy</button>
+    </div>
   </div>
 </div>
 
@@ -268,7 +304,7 @@ function showInit(){
   const prods=loadProds().filter(p=>p.active);
   document.getElementById('init-list').innerHTML=prods.map(p=>`
     <div class="s-item" style="margin-bottom:10px">
-      <div class="names" style="flex:1"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div></div>
+      <div class="names" style="flex:1"><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div></div>
       <div class="stepper">
         <button class="step-btn" onclick="stepI('${p.id}',-1)">−</button>
         <div class="step-val" id="iv-${p.id}">0</div>
@@ -323,7 +359,7 @@ function renderStock(){
         const q=sm[p.id]||0;
         const cls=q===0?'danger':q<=p.warnAt?'warn':'';
         return `<div class="stock-item ${cls}" data-n="${p.nameJa} ${p.nameVi}">
-          <div class="names"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div><div class="unit-tag">${p.unit}</div></div>
+          <div class="names"><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div><div class="unit-tag">${p.unit}</div></div>
           <div class="stock-qty">${q}</div>
         </div>`;
       }).join('')}
@@ -366,7 +402,7 @@ function repItemHTML(p,est){
   return `<div class="report-item" id="ri-${p.id}">
     <div class="report-hdr ${on?'checked':''}" onclick="togR('${p.id}')">
       <div class="chk ${on?'on':''}" id="rcb-${p.id}">✓</div>
-      <div class="names" style="flex:1"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div></div>
+      <div class="names" style="flex:1"><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div></div>
       <div style="font-size:11px;color:var(--text-sub);text-align:right">推定<br><strong style="font-size:16px;color:var(--navy)">${est}</strong></div>
     </div>
     <div class="report-body ${on?'open':''}" id="rb-${p.id}">
@@ -400,7 +436,7 @@ function genSS(){
   document.getElementById('ss-table').innerHTML=ids.map(id=>{
     const p=prods.find(x=>x.id===id);
     if(!p) return '';
-    return `<tr><td><div class="name-ja">${p.nameJa}</div><div class="name-vi" style="font-size:12px;color:#777">${p.nameVi}</div></td><td class="item-qty">${rVals[id]??0}</td></tr>`;
+    return `<tr><td><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div></td><td class="item-qty">${rVals[id]??0}</td></tr>`;
   }).join('');
   document.getElementById('ss-view').classList.add('open');
 }
@@ -427,9 +463,15 @@ function renderDelivery(){
   items.forEach(p=>{ if(!(p.id in dVals)) dVals[p.id]=0; });
 
   document.getElementById('screen-delivery').innerHTML=`
+    <div class="mt8" style="margin-bottom:14px">
+      <button class="btn btn-accent" onclick="openOcr()" style="display:flex;align-items:center;justify-content:center;gap:8px">
+        📷 伝票の写真を読み取る
+        <span class="vi">Đọc ảnh phiếu giao hàng</span>
+      </button>
+    </div>
     <p style="font-size:12px;color:var(--text-sub);margin-bottom:4px">
-      届いた商品をチェックして数量を入力してください。<br>
-      <span style="font-size:11px">Kiểm tra hàng nhận được và nhập số lượng.</span>
+      または手動で商品を選んで数量を入力。<br>
+      <span style="font-size:11px">Hoặc chọn thủ công và nhập số lượng.</span>
     </p>
     ${lastAdj?`<p style="font-size:11px;color:var(--text-sub);margin-bottom:12px">前回の残数報告より / Từ báo cáo lần trước</p>`:''}
     <div id="dl">${items.map(p=>delItemHTML(p)).join('')}</div>
@@ -448,7 +490,7 @@ function delItemHTML(p){
   return `<div class="d-item" id="di-${p.id}">
     <div class="d-row">
       <div class="chk ${on?'on':''}" id="dcb-${p.id}" onclick="togD('${p.id}')" style="cursor:pointer">✓</div>
-      <div class="names" style="flex:1"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div></div>
+      <div class="names" style="flex:1"><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div></div>
       <div class="stepper" style="width:auto">
         <button class="step-btn" style="width:46px;height:46px" onclick="stepD('${p.id}',-1)">−</button>
         <div class="step-val" id="dv-${p.id}" style="font-size:22px;min-width:46px">${dVals[p.id]||0}</div>
@@ -504,7 +546,7 @@ function renderSales(){
     <div>${sorted.map(p=>{
       if(!(p.id in sVals)) sVals[p.id]=0;
       return `<div class="s-item">
-        <div class="names" style="flex:1"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div><div class="unit-tag">在庫 ${sm[p.id]||0} ${p.unit}</div></div>
+        <div class="names" style="flex:1"><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div><div class="unit-tag">在庫 ${sm[p.id]||0} ${p.unit}</div></div>
         <div class="stepper">
           <button class="step-btn" onclick="stepS('${p.id}',-1)">−</button>
           <div class="step-val" id="sv-${p.id}">${sVals[p.id]}</div>
@@ -558,7 +600,7 @@ function renderAdmin(){
       <div class="adm-body" style="padding:0 16px">
         ${prods.map(p=>`
           <div class="prod-row">
-            <div class="names" style="flex:1"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div><div class="unit-tag">在庫 ${sm[p.id]||0} / 警告 ${p.warnAt}</div></div>
+            <div class="names" style="flex:1"><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div><div class="unit-tag">在庫 ${sm[p.id]||0} / 警告 ${p.warnAt}</div></div>
             <span class="badge ${p.active?'':'off'}">${p.active?'使用中':'終了'}</span>
             <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;margin-left:6px" onclick="togProd('${p.id}')">${p.active?'停止':'復活'}</button>
           </div>`).join('')}
@@ -614,6 +656,157 @@ function resetAll(){
     localStorage.removeItem('hk_events');
     location.reload();
   },true);
+}
+
+// ─── OCR / AI RECEIPT READING ────────────────────────────────────────
+function openOcr(){
+  document.getElementById('ocr-body').innerHTML=`
+    <label class="upload-area" for="ocr-file-input">
+      <div class="icon">📄</div>
+      <p>タップして伝票の写真を選択<br><span style="font-size:12px">Nhấn để chọn ảnh phiếu</span></p>
+    </label>
+    <input id="ocr-file-input" type="file" accept="image/*" style="display:none" onchange="readDeliveryImage(this)">`;
+  document.getElementById('ocr-ov').classList.add('open');
+}
+function closeOcr(){
+  document.getElementById('ocr-ov').classList.remove('open');
+}
+
+async function readDeliveryImage(input){
+  if(!input.files||!input.files[0]) return;
+  const file=input.files[0];
+
+  // Show loading
+  document.getElementById('ocr-body').innerHTML=`
+    <div class="ocr-reading">
+      <div class="ocr-spinner">⏳</div>
+      <p style="margin-top:12px;font-size:14px;color:var(--text-sub)">
+        伝票を読み取り中…<br>
+        <span style="font-size:12px">Đang đọc phiếu giao hàng...</span>
+      </p>
+    </div>`;
+
+  // Convert to base64
+  const base64 = await new Promise((res,rej)=>{
+    const r=new FileReader();
+    r.onload=()=>res(r.result.split(',')[1]);
+    r.onerror=()=>rej(new Error('read failed'));
+    r.readAsDataURL(file);
+  });
+
+  const mediaType = file.type || 'image/jpeg';
+
+  // Build product list for Claude context
+  const prods = loadProds().filter(p=>p.active);
+  const prodList = prods.map(p=>`- ${p.nameJa} / ${p.nameVi}`).join('\n');
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages',{
+      method:'POST',
+      headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({
+        model:'claude-sonnet-4-6',
+        max_tokens:1000,
+        messages:[{
+          role:'user',
+          content:[
+            {
+              type:'image',
+              source:{type:'base64', media_type:mediaType, data:base64}
+            },
+            {
+              type:'text',
+              text:`この伝票（納品書）から商品名と数量を読み取ってください。
+
+以下が当店の商品マスタです。伝票の商品名と最もよく一致するものをマッチングしてください：
+${prodList}
+
+必ず以下のJSON形式のみで返答してください（他のテキスト不要）：
+[
+  {"nameOnReceipt": "伝票上の商品名", "qty": 数量, "matchedId": "マスタのid or null", "matchedJa": "マスタの日本語名 or null"},
+  ...
+]
+
+マスタに一致する商品がない場合は matchedId を null にしてください。
+数量は必ず整数で返してください。`
+            }
+          ]
+        }]
+      })
+    });
+
+    const data = await resp.json();
+    const text = data.content.map(c=>c.text||'').join('');
+    const clean = text.replace(/```json|```/g,'').trim();
+    const items = JSON.parse(clean);
+    showOcrResult(items);
+
+  } catch(err) {
+    document.getElementById('ocr-body').innerHTML=`
+      <div style="text-align:center;padding:24px;color:var(--danger)">
+        <div style="font-size:32px">⚠️</div>
+        <p style="margin-top:8px;font-size:14px">読み取りに失敗しました。<br>もう一度試してください。</p>
+        <p style="font-size:11px;color:var(--text-sub);margin-top:4px">${err.message}</p>
+      </div>
+      <button class="btn btn-ghost btn-sm mt12" onclick="openOcr()">もう一度 / Thử lại</button>`;
+  }
+}
+
+function showOcrResult(items){
+  const prods=loadProds();
+  const matched=items.filter(i=>i.matchedId);
+  const unmatched=items.filter(i=>!i.matchedId);
+
+  // Pre-fill delivery vals with matched items
+  matched.forEach(i=>{
+    dVals[i.matchedId]=i.qty;
+    dChk[i.matchedId]=true;
+  });
+
+  document.getElementById('ocr-body').innerHTML=`
+    <div style="margin-bottom:12px">
+      <p style="font-size:13px;font-weight:700;margin-bottom:4px">読み取り結果 / Kết quả đọc</p>
+      <p style="font-size:11px;color:var(--text-sub)">現物と照合して確認してください。<br>Đối chiếu với hàng thực tế.</p>
+    </div>
+    ${matched.map(i=>`
+      <div class="ocr-result-item">
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600">${i.matchedJa}</div>
+          <div style="font-size:11px;color:var(--text-sub)">${i.nameOnReceipt}</div>
+        </div>
+        <span class="ocr-badge matched">一致</span>
+        <div class="stepper" style="width:auto">
+          <button class="step-btn" style="width:40px;height:40px;font-size:22px" onclick="stepOcrItem('${i.matchedId}',-1)">−</button>
+          <div class="step-val" id="ocrv-${i.matchedId}" style="font-size:20px;min-width:40px">${i.qty}</div>
+          <button class="step-btn" style="width:40px;height:40px;font-size:22px" onclick="stepOcrItem('${i.matchedId}',1)">＋</button>
+        </div>
+      </div>`).join('')}
+    ${unmatched.length?`
+      <div style="margin-top:12px;padding:10px;background:var(--warn-bg);border-radius:var(--r-sm)">
+        <p style="font-size:12px;font-weight:700;color:var(--warn);margin-bottom:6px">⚠️ 商品マスタに未登録 / Chưa có trong danh sách</p>
+        ${unmatched.map(i=>`
+          <div style="font-size:13px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)">${i.nameOnReceipt} × ${i.qty}</div>`).join('')}
+        <p style="font-size:11px;color:var(--text-sub);margin-top:6px">管理→商品追加から登録してください。</p>
+      </div>`:''}
+    <div class="mt16">
+      <button class="btn btn-primary" onclick="applyOcrResult()">
+        ✓ この内容で納品画面へ
+        <span class="vi">Xác nhận & chuyển sang màn hình nhận hàng</span>
+      </button>
+    </div>`;
+}
+
+function stepOcrItem(id,d){
+  dVals[id]=Math.max(0,(dVals[id]||0)+d);
+  const el=document.getElementById('ocrv-'+id);
+  if(el) el.textContent=dVals[id];
+}
+
+function applyOcrResult(){
+  closeOcr();
+  // Re-render delivery screen with OCR-filled values
+  renderDelivery();
+  toast('伝票を反映しました。現物と照合して受取完了を押してください。');
 }
 
 // ─── CONFIRM ─────────────────────────────────────────────────────────
