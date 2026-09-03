@@ -186,19 +186,20 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
   </div>
 </div>
 
-<!-- OCR overlay -->
+<!-- Text paste overlay -->
 <div id="ocr-ov">
   <div class="ocr-sheet">
-    <div class="ocr-title">📷 伝票を読み取る / Đọc phiếu giao hàng</div>
-    <div class="ocr-sub">TOSHIROから届いた伝票の写真をアップロードしてください。<br>Tải ảnh phiếu giao hàng từ TOSHIRO lên.</div>
+    <div class="ocr-title">📋 伝票テキストを貼り付ける / Dán nội dung phiếu</div>
+    <div class="ocr-sub">TOSHIROから届いたテキストをそのまま貼り付けてください。<br>Dán text phiếu giao hàng từ TOSHIRO vào đây.</div>
     <div id="ocr-body">
-      <label class="upload-area" for="ocr-file-input">
-        <div class="icon">📄</div>
-        <p>タップして写真を選択<br><span style="font-size:12px">Nhấn để chọn ảnh</span></p>
-      </label>
-      <input id="ocr-file-input" type="file" accept="image/*" style="display:none" onchange="readDeliveryImage(this)">
+      <textarea id="paste-input" 
+        style="width:100%;height:160px;padding:12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:15px;background:var(--bg);color:var(--text);resize:none;outline:none;font-family:inherit;margin-bottom:12px"
+        placeholder="例 / Ví dụ:&#10;Cơm nắm sò điệp 10&#10;Hành baro 1&#10;Củ cải trắng 25&#10;Đậu hũ chiên 12"></textarea>
+      <button class="btn btn-primary" onclick="parsePastedText()">
+        読み取る / Đọc nội dung
+      </button>
     </div>
-    <div class="mt12">
+    <div class="mt8">
       <button class="btn btn-ghost" onclick="closeOcr()">キャンセル / Hủy</button>
     </div>
   </div>
@@ -465,8 +466,8 @@ function renderDelivery(){
   document.getElementById('screen-delivery').innerHTML=`
     <div class="mt8" style="margin-bottom:14px">
       <button class="btn btn-accent" onclick="openOcr()" style="display:flex;align-items:center;justify-content:center;gap:8px">
-        📷 伝票の写真を読み取る
-        <span class="vi">Đọc ảnh phiếu giao hàng</span>
+        📋 伝票テキストを貼り付ける
+        <span class="vi">Dán nội dung phiếu giao hàng</span>
       </button>
     </div>
     <p style="font-size:12px;color:var(--text-sub);margin-bottom:4px">
@@ -658,137 +659,127 @@ function resetAll(){
   },true);
 }
 
-// ─── OCR / AI RECEIPT READING ────────────────────────────────────────
+// ─── TEXT PASTE DELIVERY ─────────────────────────────────────────────
 function openOcr(){
+  // Reset textarea
   document.getElementById('ocr-body').innerHTML=`
-    <label class="upload-area" for="ocr-file-input">
-      <div class="icon">📄</div>
-      <p>タップして伝票の写真を選択<br><span style="font-size:12px">Nhấn để chọn ảnh phiếu</span></p>
-    </label>
-    <input id="ocr-file-input" type="file" accept="image/*" style="display:none" onchange="readDeliveryImage(this)">`;
+    <textarea id="paste-input"
+      style="width:100%;height:160px;padding:12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:15px;background:var(--bg);color:var(--text);resize:none;outline:none;font-family:inherit;margin-bottom:12px"
+      placeholder="例 / Ví dụ:&#10;Cơm nắm sò điệp 10&#10;Hành baro 1&#10;Củ cải trắng 25&#10;Đậu hũ chiên 12"></textarea>
+    <button class="btn btn-primary" onclick="parsePastedText()">
+      読み取る / Đọc nội dung
+    </button>`;
   document.getElementById('ocr-ov').classList.add('open');
+  // Auto-focus textarea after short delay
+  setTimeout(()=>{
+    const ta=document.getElementById('paste-input');
+    if(ta) ta.focus();
+  },200);
 }
+
 function closeOcr(){
   document.getElementById('ocr-ov').classList.remove('open');
 }
 
-async function readDeliveryImage(input){
-  if(!input.files||!input.files[0]) return;
-  const file=input.files[0];
+function parsePastedText(){
+  const text=(document.getElementById('paste-input').value||'').trim();
+  if(!text){toast('テキストを入力してください');return;}
 
-  // Show loading
-  document.getElementById('ocr-body').innerHTML=`
-    <div class="ocr-reading">
-      <div class="ocr-spinner">⏳</div>
-      <p style="margin-top:12px;font-size:14px;color:var(--text-sub)">
-        伝票を読み取り中…<br>
-        <span style="font-size:12px">Đang đọc phiếu giao hàng...</span>
-      </p>
-    </div>`;
+  const prods=loadProds().filter(p=>p.active);
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const matched=[];
+  const unmatched=[];
 
-  // Convert to base64
-  const base64 = await new Promise((res,rej)=>{
-    const r=new FileReader();
-    r.onload=()=>res(r.result.split(',')[1]);
-    r.onerror=()=>rej(new Error('read failed'));
-    r.readAsDataURL(file);
-  });
+  for(const line of lines){
+    // Extract trailing number (quantity)
+    const m=line.match(/^(.*?)\s+(\d+)\s*$/);
+    if(!m) continue;
+    const namePart=m[1].trim();
+    const qty=parseInt(m[2]);
 
-  const mediaType = file.type || 'image/jpeg';
+    // Try to match against product master
+    // Score: exact match > contains > fuzzy (normalized)
+    const normalize=s=>s.toLowerCase()
+      .replace(/[áàảãạăắằẳẵặâấầẩẫậ]/g,'a')
+      .replace(/[éèẻẽẹêếềểễệ]/g,'e')
+      .replace(/[íìỉĩị]/g,'i')
+      .replace(/[óòỏõọôốồổỗộơớờởỡợ]/g,'o')
+      .replace(/[úùủũụưứừửữự]/g,'u')
+      .replace(/[ýỳỷỹỵ]/g,'y')
+      .replace(/đ/g,'d')
+      .replace(/[^\w\s]/g,'')
+      .replace(/\s+/g,' ').trim();
 
-  // Build product list for Claude context
-  const prods = loadProds().filter(p=>p.active);
-  const prodList = prods.map(p=>`- ${p.nameJa} / ${p.nameVi}`).join('\n');
+    const normName=normalize(namePart);
+    let best=null, bestScore=0;
 
-  try {
-    const resp = await fetch('https://api.anthropic.com/v1/messages',{
-      method:'POST',
-      headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({
-        model:'claude-sonnet-4-6',
-        max_tokens:1000,
-        messages:[{
-          role:'user',
-          content:[
-            {
-              type:'image',
-              source:{type:'base64', media_type:mediaType, data:base64}
-            },
-            {
-              type:'text',
-              text:`この伝票（納品書）から商品名と数量を読み取ってください。
+    for(const p of prods){
+      const targets=[p.nameVi, p.nameJa].map(normalize);
+      for(const t of targets){
+        let score=0;
+        if(t===normName) score=100;
+        else if(t.includes(normName)||normName.includes(t)) score=50;
+        else {
+          // word overlap
+          const wa=new Set(normName.split(' '));
+          const wb=new Set(t.split(' '));
+          const overlap=[...wa].filter(w=>w.length>2&&wb.has(w)).length;
+          if(overlap>0) score=overlap*20;
+        }
+        if(score>bestScore){bestScore=score;best=p;}
+      }
+    }
 
-以下が当店の商品マスタです。伝票の商品名と最もよく一致するものをマッチングしてください：
-${prodList}
-
-必ず以下のJSON形式のみで返答してください（他のテキスト不要）：
-[
-  {"nameOnReceipt": "伝票上の商品名", "qty": 数量, "matchedId": "マスタのid or null", "matchedJa": "マスタの日本語名 or null"},
-  ...
-]
-
-マスタに一致する商品がない場合は matchedId を null にしてください。
-数量は必ず整数で返してください。`
-            }
-          ]
-        }]
-      })
-    });
-
-    const data = await resp.json();
-    const text = data.content.map(c=>c.text||'').join('');
-    const clean = text.replace(/```json|```/g,'').trim();
-    const items = JSON.parse(clean);
-    showOcrResult(items);
-
-  } catch(err) {
-    document.getElementById('ocr-body').innerHTML=`
-      <div style="text-align:center;padding:24px;color:var(--danger)">
-        <div style="font-size:32px">⚠️</div>
-        <p style="margin-top:8px;font-size:14px">読み取りに失敗しました。<br>もう一度試してください。</p>
-        <p style="font-size:11px;color:var(--text-sub);margin-top:4px">${err.message}</p>
-      </div>
-      <button class="btn btn-ghost btn-sm mt12" onclick="openOcr()">もう一度 / Thử lại</button>`;
+    if(best&&bestScore>=20){
+      matched.push({product:best, qty, nameOnReceipt:namePart});
+    } else {
+      unmatched.push({nameOnReceipt:namePart, qty});
+    }
   }
+
+  if(!matched.length&&!unmatched.length){
+    toast('商品が見つかりませんでした。フォーマットを確認してください。');
+    return;
+  }
+
+  showParseResult(matched, unmatched);
 }
 
-function showOcrResult(items){
-  const prods=loadProds();
-  const matched=items.filter(i=>i.matchedId);
-  const unmatched=items.filter(i=>!i.matchedId);
-
-  // Pre-fill delivery vals with matched items
+function showParseResult(matched, unmatched){
+  // Pre-fill delivery vals
   matched.forEach(i=>{
-    dVals[i.matchedId]=i.qty;
-    dChk[i.matchedId]=true;
+    dVals[i.product.id]=i.qty;
+    dChk[i.product.id]=true;
   });
 
   document.getElementById('ocr-body').innerHTML=`
     <div style="margin-bottom:12px">
-      <p style="font-size:13px;font-weight:700;margin-bottom:4px">読み取り結果 / Kết quả đọc</p>
-      <p style="font-size:11px;color:var(--text-sub)">現物と照合して確認してください。<br>Đối chiếu với hàng thực tế.</p>
+      <p style="font-size:13px;font-weight:700;margin-bottom:2px">読み取り結果 / Kết quả đọc</p>
+      <p style="font-size:11px;color:var(--text-sub)">現物と照合して数量を確認してください。<br>Đối chiếu với hàng và kiểm tra số lượng.</p>
     </div>
     ${matched.map(i=>`
       <div class="ocr-result-item">
         <div style="flex:1">
-          <div style="font-size:14px;font-weight:600">${i.matchedJa}</div>
+          <div style="font-size:14px;font-weight:600">${i.product.nameVi}</div>
           <div style="font-size:11px;color:var(--text-sub)">${i.nameOnReceipt}</div>
         </div>
-        <span class="ocr-badge matched">一致</span>
+        <span class="ocr-badge matched">✓</span>
         <div class="stepper" style="width:auto">
-          <button class="step-btn" style="width:40px;height:40px;font-size:22px" onclick="stepOcrItem('${i.matchedId}',-1)">−</button>
-          <div class="step-val" id="ocrv-${i.matchedId}" style="font-size:20px;min-width:40px">${i.qty}</div>
-          <button class="step-btn" style="width:40px;height:40px;font-size:22px" onclick="stepOcrItem('${i.matchedId}',1)">＋</button>
+          <button class="step-btn" style="width:40px;height:40px;font-size:22px" onclick="stepOcrItem('${i.product.id}',-1)">−</button>
+          <div class="step-val" id="ocrv-${i.product.id}" style="font-size:20px;min-width:44px">${i.qty}</div>
+          <button class="step-btn" style="width:40px;height:40px;font-size:22px" onclick="stepOcrItem('${i.product.id}',1)">＋</button>
         </div>
       </div>`).join('')}
     ${unmatched.length?`
       <div style="margin-top:12px;padding:10px;background:var(--warn-bg);border-radius:var(--r-sm)">
-        <p style="font-size:12px;font-weight:700;color:var(--warn);margin-bottom:6px">⚠️ 商品マスタに未登録 / Chưa có trong danh sách</p>
-        ${unmatched.map(i=>`
-          <div style="font-size:13px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)">${i.nameOnReceipt} × ${i.qty}</div>`).join('')}
-        <p style="font-size:11px;color:var(--text-sub);margin-top:6px">管理→商品追加から登録してください。</p>
+        <p style="font-size:12px;font-weight:700;color:var(--warn);margin-bottom:6px">⚠️ マスタに未登録 / Chưa có trong danh sách</p>
+        ${unmatched.map(i=>`<div style="font-size:13px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)">${i.nameOnReceipt} × ${i.qty}</div>`).join('')}
+        <p style="font-size:11px;color:var(--text-sub);margin-top:6px">⚙️管理から商品を追加できます。</p>
       </div>`:''}
-    <div class="mt16">
+    <div class="mt8">
+      <button class="btn btn-ghost btn-sm" onclick="openOcr()">← 貼り直す / Dán lại</button>
+    </div>
+    <div class="mt8">
       <button class="btn btn-primary" onclick="applyOcrResult()">
         ✓ この内容で納品画面へ
         <span class="vi">Xác nhận & chuyển sang màn hình nhận hàng</span>
@@ -804,9 +795,8 @@ function stepOcrItem(id,d){
 
 function applyOcrResult(){
   closeOcr();
-  // Re-render delivery screen with OCR-filled values
   renderDelivery();
-  toast('伝票を反映しました。現物と照合して受取完了を押してください。');
+  toast('伝票を反映しました ✓');
 }
 
 // ─── CONFIRM ─────────────────────────────────────────────────────────
