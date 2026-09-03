@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="theme-color" content="#1a1a2e">
+<title>HOKKIYA 在庫 / Tồn Kho</title>
+<style>
+:root{--bg:#f5f3ef;--surface:#fff;--navy:#1a1a2e;--accent:#c8a96e;--danger:#c0392b;--danger-bg:#fdf0ee;--warn:#e67e22;--warn-bg:#fef9e7;--ok:#27ae60;--text:#1a1a2e;--text-sub:#6b6b8a;--border:#e0ddd6;--nav-h:68px;--r:12px;--r-sm:8px}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:var(--nav-h);font-size:15px;line-height:1.5}
+.app-header{background:var(--navy);color:#fff;padding:14px 16px 12px;display:flex;align-items:center;position:sticky;top:0;z-index:100}
+.app-header h1{font-size:18px;font-weight:700;letter-spacing:.05em}
+.app-header .sub{font-size:11px;color:var(--accent);margin-top:1px}
+.nav{position:fixed;bottom:0;left:0;right:0;height:var(--nav-h);background:var(--navy);display:flex;z-index:200;border-top:2px solid var(--accent)}
+.nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:rgba(255,255,255,.45);background:none;border:none;cursor:pointer;font-size:10px;padding:4px 2px;transition:color .15s}
+.nav-btn.active{color:var(--accent)}
+.nav-btn .icon{font-size:20px;line-height:1}
+.screen{display:none;padding:12px}
+.screen.active{display:block}
+/* stock */
+.stock-list{display:flex;flex-direction:column;gap:8px}
+.stock-item{background:var(--surface);border-radius:var(--r);padding:14px 16px;display:flex;align-items:center;gap:12px;border-left:4px solid var(--border);box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.stock-item.danger{border-left-color:var(--danger);background:var(--danger-bg)}
+.stock-item.warn{border-left-color:var(--warn);background:var(--warn-bg)}
+.stock-item .names{flex:1}
+.name-ja{font-size:15px;font-weight:600}
+.name-vi{font-size:12px;color:var(--text-sub);margin-top:1px}
+.unit-tag{font-size:11px;color:var(--text-sub)}
+.stock-qty{font-size:30px;font-weight:800;min-width:44px;text-align:right;color:var(--navy)}
+.stock-item.danger .stock-qty{color:var(--danger)}
+.stock-item.warn .stock-qty{color:var(--warn)}
+/* report */
+.report-item{background:var(--surface);border-radius:var(--r);margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.report-hdr{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer}
+.report-hdr.checked{background:#f0f7ff}
+.chk{width:26px;height:26px;border-radius:6px;border:2px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:#fff;transition:all .15s}
+.chk.on{background:var(--navy);border-color:var(--navy)}
+.report-body{padding:0 16px 16px;border-top:1px solid var(--border);display:none}
+.report-body.open{display:block}
+/* stepper */
+.stepper{display:flex;align-items:center;background:var(--bg);border-radius:var(--r-sm);overflow:hidden;border:1.5px solid var(--border)}
+.step-btn{width:54px;height:54px;background:none;border:none;font-size:28px;font-weight:300;color:var(--navy);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.step-btn:active{background:var(--border)}
+.step-val{flex:1;text-align:center;font-size:28px;font-weight:800;color:var(--navy);min-width:60px}
+/* btn */
+.btn{display:block;width:100%;padding:16px;border-radius:var(--r);border:none;font-size:16px;font-weight:700;cursor:pointer;text-align:center;transition:opacity .15s,transform .1s}
+.btn:active{opacity:.85;transform:scale(.98)}
+.btn-primary{background:var(--navy);color:#fff}
+.btn-accent{background:var(--accent);color:var(--navy)}
+.btn-danger{background:var(--danger);color:#fff}
+.btn-ghost{background:transparent;color:var(--navy);border:2px solid var(--border)}
+.btn .vi{font-size:13px;font-weight:500;display:block;opacity:.8;margin-top:2px}
+.btn-sm{padding:10px 16px;font-size:14px}
+/* screenshot */
+#ss-view{display:none;position:fixed;inset:0;background:#fff;z-index:500;padding:32px 24px;overflow-y:auto}
+#ss-view.open{display:block}
+.ss-hdr{text-align:center;margin-bottom:24px}
+.ss-logo{font-size:28px;font-weight:900;letter-spacing:.12em}
+.ss-sub{font-size:14px;color:#555;margin-top:4px}
+.ss-date{font-size:13px;color:#888;margin-top:2px}
+.ss-table{width:100%;border-collapse:collapse;margin:20px 0}
+.ss-table tr{border-bottom:1px solid #eee}
+.ss-table td{padding:12px 4px}
+.item-qty{font-size:24px;font-weight:900;text-align:right;min-width:48px}
+.ss-close{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;border:none;border-radius:40px;padding:14px 36px;font-size:15px;font-weight:700;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+/* delivery / sale */
+.d-item{background:var(--surface);border-radius:var(--r);margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.d-row{display:flex;align-items:center;gap:12px;padding:14px 16px}
+.s-item{background:var(--surface);border-radius:var(--r);margin-bottom:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+/* admin */
+.adm-sec{background:var(--surface);border-radius:var(--r);margin-bottom:12px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+.adm-hdr{padding:14px 16px;font-weight:700;font-size:15px;border-bottom:1px solid var(--border);cursor:pointer}
+.adm-body{padding:16px}
+.form-group{margin-bottom:14px}
+.form-label{font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:5px;display:block}
+.form-input{width:100%;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:15px;background:var(--bg);color:var(--text);outline:none}
+.form-input:focus{border-color:var(--accent)}
+.hist-item{padding:10px 0;border-bottom:1px solid var(--border);font-size:13px}
+.hist-item:last-child{border-bottom:none}
+.hist-time{color:var(--text-sub);font-size:11px}
+.hist-desc{font-weight:600;margin:2px 0}
+.hist-detail{color:var(--text-sub);font-size:12px}
+.prod-row{display:flex;align-items:center;gap:10px;padding:12px 0;border-bottom:1px solid var(--border)}
+.prod-row:last-child{border-bottom:none}
+.badge{font-size:10px;font-weight:700;padding:3px 8px;border-radius:20px;background:#eafaf1;color:var(--ok)}
+.badge.off{background:#f5f5f5;color:#999}
+/* init */
+#init-ov{position:fixed;inset:0;background:var(--bg);z-index:600;overflow-y:auto;display:none}
+#init-ov.open{display:block}
+.init-hdr{background:var(--navy);color:#fff;padding:20px 16px;text-align:center}
+.init-hdr h2{font-size:20px}
+.init-hdr p{font-size:13px;color:var(--accent);margin-top:4px}
+/* confirm */
+#conf{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:700;align-items:flex-end;justify-content:center}
+#conf.open{display:flex}
+.conf-sheet{background:var(--surface);border-radius:20px 20px 0 0;padding:24px 16px 36px;width:100%;max-width:480px}
+.conf-title{font-size:17px;font-weight:700;margin-bottom:6px}
+.conf-body{font-size:14px;color:var(--text-sub);margin-bottom:20px;white-space:pre-wrap}
+.conf-acts{display:flex;gap:10px}
+.conf-acts .btn{flex:1}
+/* search */
+.srch-wrap{position:relative}
+.srch-icon{position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--text-sub);font-size:16px;pointer-events:none}
+.srch-box{width:100%;padding:12px 14px 12px 38px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:15px;background:var(--surface);color:var(--text);outline:none;margin-bottom:12px}
+/* toast */
+#toast{position:fixed;bottom:calc(var(--nav-h) + 12px);left:50%;transform:translateX(-50%);background:var(--navy);color:#fff;padding:12px 20px;border-radius:40px;font-size:14px;font-weight:600;z-index:999;opacity:0;transition:opacity .2s;white-space:nowrap;pointer-events:none}
+#toast.show{opacity:1}
+.empty{text-align:center;padding:40px 20px;color:var(--text-sub)}
+.mt8{margin-top:8px}.mt12{margin-top:12px}.mt16{margin-top:16px}
+</style>
+</head>
+<body>
+<header class="app-header">
+  <div>
+    <h1>🧊 HOKKIYA</h1>
+    <div class="sub">在庫管理 / Quản lý tồn kho</div>
+  </div>
+</header>
+
+<div id="screen-stock"    class="screen active"></div>
+<div id="screen-report"   class="screen"></div>
+<div id="screen-delivery" class="screen"></div>
+<div id="screen-sales"    class="screen"></div>
+<div id="screen-admin"    class="screen"></div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="go('stock')"    data-s="stock">
+    <span class="icon">🧊</span><span>在庫</span><span style="font-size:9px;opacity:.8">Tồn kho</span>
+  </button>
+  <button class="nav-btn" onclick="go('report')"   data-s="report">
+    <span class="icon">📝</span><span>残数報告</span><span style="font-size:9px;opacity:.8">Báo số</span>
+  </button>
+  <button class="nav-btn" onclick="go('delivery')" data-s="delivery">
+    <span class="icon">📦</span><span>納品</span><span style="font-size:9px;opacity:.8">Nhận hàng</span>
+  </button>
+  <button class="nav-btn" onclick="go('sales')"    data-s="sales">
+    <span class="icon">🧾</span><span>販売</span><span style="font-size:9px;opacity:.8">Bán hàng</span>
+  </button>
+  <button class="nav-btn" onclick="go('admin')"    data-s="admin">
+    <span class="icon">⚙️</span><span>管理</span><span style="font-size:9px;opacity:.8">Quản lý</span>
+  </button>
+</nav>
+
+<!-- Screenshot -->
+<div id="ss-view">
+  <div class="ss-hdr">
+    <div class="ss-logo">HOKKIYA</div>
+    <div class="ss-sub">残数報告 / BÁO SỐ LƯỢNG CÒN LẠI</div>
+    <div class="ss-date" id="ss-date"></div>
+  </div>
+  <table class="ss-table" id="ss-table"></table>
+  <div style="height:80px"></div>
+  <button class="ss-close" onclick="document.getElementById('ss-view').classList.remove('open')">✕ 閉じる / Đóng</button>
+</div>
+
+<!-- Init -->
+<div id="init-ov">
+  <div class="init-hdr">
+    <h2>初回在庫登録</h2>
+    <p>Nhập tồn kho ban đầu</p>
+  </div>
+  <div style="padding:16px">
+    <p style="font-size:13px;color:var(--text-sub);margin-bottom:16px">冷凍庫の実在庫を数えて入力してください。<br><span style="font-size:12px">Hãy đếm và nhập số lượng thực tế trong kho lạnh.</span></p>
+    <div id="init-list"></div>
+    <div class="mt16"><button class="btn btn-primary" onclick="completeInit()">登録完了 / Hoàn tất đăng ký</button></div>
+  </div>
+</div>
+
+<!-- Confirm -->
+<div id="conf">
+  <div class="conf-sheet">
+    <div class="conf-title" id="conf-title"></div>
+    <div class="conf-body"  id="conf-body"></div>
+    <div class="conf-acts">
+      <button class="btn btn-ghost" onclick="closeConf()">キャンセル</button>
+      <button class="btn btn-primary" id="conf-ok">確認</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+// ─── PRODUCT MASTER ───────────────────────────────────────────────────
+const DEFAULT_PRODUCTS = [
+  // 料理
+  {id:'ramen_salad',   nameJa:'ラーメンサラダ',         nameVi:'Salad mì ramen',             unit:'袋', warnAt:2, active:true},
+  {id:'asupara',       nameJa:'アスパラバター',           nameVi:'Măng tây xào bơ',            unit:'份', warnAt:2, active:true},
+  {id:'corn',          nameJa:'コーンバター',             nameVi:'Bắp Ngọt Xào Bơ',           unit:'份', warnAt:2, active:true},
+  {id:'tako_zangi',    nameJa:'たこザンギ',               nameVi:'Bạch tuộc chiên',            unit:'份', warnAt:2, active:true},
+  {id:'tori_zangi',    nameJa:'若どりザンギ',             nameVi:'Gà Chiên Zangi',             unit:'份', warnAt:2, active:true},
+  {id:'horumon',       nameJa:'塩ホルモン',               nameVi:'Lòng heo nướng muối',        unit:'份', warnAt:2, active:true},
+  {id:'jaga_bata',     nameJa:'塩辛じゃがバター',         nameVi:'Khoai Tây Bơ Mắm Mực',      unit:'個', warnAt:3, active:true},
+  {id:'salmon',        nameJa:'ちゃんちゃんホイル焼き',   nameVi:'Lườn Cá Hồi Nướng Miso Bơ', unit:'份', warnAt:2, active:true},
+  {id:'jingisukan',    nameJa:'ジンギスカン炒め',         nameVi:'Thịt Cừu Xào Gengis Khan',  unit:'份', warnAt:2, active:true},
+  {id:'hotate_onigiri',nameJa:'ホタテ焼きおにぎり',       nameVi:'Cơm nắm sò điệp',           unit:'份', warnAt:2, active:true},
+  {id:'katsuo_onigiri',nameJa:'かつお昆布おにぎり',       nameVi:'Cơm Nắm Cá Ngừ Bào',        unit:'份', warnAt:2, active:true},
+  {id:'soup_curry',    nameJa:'スープカレー',             nameVi:'Soup Curry Đùi Gà',          unit:'份', warnAt:2, active:true},
+  {id:'buta_don',      nameJa:'帯広名物！豚丼',           nameVi:'Cơm Ba Chỉ Heo Áp Cháo',    unit:'份', warnAt:2, active:true},
+  {id:'esukaroppi',    nameJa:'根室！エスカロップ',        nameVi:'Cơm Bơ Tỏi Heo Chiên Xù',   unit:'份', warnAt:2, active:true},
+  // 調味料・食材
+  {id:'shoyu',         nameJa:'醤油',                    nameVi:'Nước tương',                 unit:'本', warnAt:1, active:true},
+  {id:'soba_tsuyu',    nameJa:'蕎麦つゆ',                nameVi:'Soba tsuyu',                 unit:'本', warnAt:1, active:true},
+  {id:'mayo',          nameJa:'マヨネーズ',               nameVi:'Mayonaise',                  unit:'袋', warnAt:1, active:true},
+  {id:'shiro_negi',    nameJa:'白ねぎ',                  nameVi:'Baro (hành tây)',             unit:'袋', warnAt:1, active:true},
+  {id:'ao_negi',       nameJa:'青ネギ',                  nameVi:'Hành lá',                    unit:'袋', warnAt:1, active:true},
+  {id:'kyabetsu',      nameJa:'千切りキャベツ',           nameVi:'Bắp cải sợi',               unit:'袋', warnAt:1, active:true},
+  {id:'otoshi',        nameJa:'お通し',                  nameVi:'Otoshi',                     unit:'袋', warnAt:2, active:true},
+  {id:'kushi',         nameJa:'串',                      nameVi:'Que xiên',                   unit:'袋', warnAt:1, active:true},
+  {id:'gohan',         nameJa:'ご飯',                    nameVi:'Cơm trắng',                  unit:'份', warnAt:3, active:true},
+  {id:'oden_soup',     nameJa:'おでんスープ',             nameVi:'Soup oden',                  unit:'袋', warnAt:1, active:true},
+  // おでん
+  {id:'daikon',        nameJa:'大根',                    nameVi:'Daikon (củ cải)',             unit:'份', warnAt:3, active:true},
+  {id:'tamago',        nameJa:'たまご',                  nameVi:'Trứng',                      unit:'份', warnAt:3, active:true},
+  {id:'konyaku',       nameJa:'こんにゃく',               nameVi:'Konyaku',                    unit:'份', warnAt:2, active:true},
+  {id:'atsuage',       nameJa:'厚揚げ豆腐',              nameVi:'Đậu hũ chiên (atsuage)',     unit:'份', warnAt:2, active:true},
+  {id:'satsuma_age',   nameJa:'さつま揚げ',              nameVi:'Chả cá chiên',               unit:'份', warnAt:2, active:true},
+  {id:'tsukune',       nameJa:'つくね',                  nameVi:'Tsukune',                    unit:'份', warnAt:2, active:true},
+  {id:'gyutan',        nameJa:'牛タン',                  nameVi:'Lưỡi bò',                    unit:'份', warnAt:2, active:true},
+  {id:'ebi_shinjo',    nameJa:'えび真丈',                nameVi:'Chả tôm',                    unit:'份', warnAt:2, active:true},
+  {id:'tsubu',         nameJa:'つぶ貝',                  nameVi:'Ốc tsubu',                   unit:'份', warnAt:2, active:true},
+  {id:'rorukyabetsu',  nameJa:'ロールキャベツ',           nameVi:'Bắp cải cuộn',              unit:'份', warnAt:2, active:true},
+];
+
+// ─── STORAGE ─────────────────────────────────────────────────────────
+const LS={
+  get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},
+  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+};
+const loadProds=()=>LS.get('hk_products')||[];
+const saveProds=p=>LS.set('hk_products',p);
+const loadEvts =()=>LS.get('hk_events')||[];
+const saveEvts =e=>LS.set('hk_events',e);
+
+function addEvt(type,items,note=''){
+  const e=loadEvts();
+  e.push({id:Date.now().toString(),type,at:new Date().toISOString(),items,note});
+  saveEvts(e);
+}
+
+function calcStock(pid){
+  let qty=0;
+  for(const ev of loadEvts()){
+    const it=ev.items.find(i=>i.productId===pid);
+    if(!it) continue;
+    if(ev.type==='init'||ev.type==='adjust') qty=it.qty;
+    if(ev.type==='delivery') qty+=it.qty;
+    if(ev.type==='sale')     qty-=it.qty;
+  }
+  return Math.max(0,qty);
+}
+
+function stocksMap(){
+  const m={};
+  for(const p of loadProds()) m[p.id]=calcStock(p.id);
+  return m;
+}
+
+// ─── INIT ─────────────────────────────────────────────────────────────
+function boot(){
+  if(!loadProds().length){ saveProds(DEFAULT_PRODUCTS.map(p=>({...p}))); }
+  if(!loadEvts().some(e=>e.type==='init')) showInit();
+}
+
+function showInit(){
+  const prods=loadProds().filter(p=>p.active);
+  document.getElementById('init-list').innerHTML=prods.map(p=>`
+    <div class="s-item" style="margin-bottom:10px">
+      <div class="names" style="flex:1"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div></div>
+      <div class="stepper">
+        <button class="step-btn" onclick="stepI('${p.id}',-1)">−</button>
+        <div class="step-val" id="iv-${p.id}">0</div>
+        <button class="step-btn" onclick="stepI('${p.id}',1)">＋</button>
+      </div>
+    </div>`).join('');
+  document.getElementById('init-ov').classList.add('open');
+}
+
+const iVals={};
+function stepI(id,d){
+  iVals[id]=Math.max(0,(iVals[id]||0)+d);
+  const el=document.getElementById('iv-'+id);
+  if(el) el.textContent=iVals[id];
+}
+function completeInit(){
+  const items=loadProds().filter(p=>p.active).map(p=>({productId:p.id,qty:iVals[p.id]||0}));
+  addEvt('init',items,'初回在庫登録');
+  document.getElementById('init-ov').classList.remove('open');
+  render('stock');
+  toast('在庫を登録しました ✓');
+}
+
+// ─── NAV ──────────────────────────────────────────────────────────────
+function go(name){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('screen-'+name).classList.add('active');
+  document.querySelector(`.nav-btn[data-s="${name}"]`).classList.add('active');
+  render(name);
+}
+function render(name){
+  if(name==='stock')    renderStock();
+  if(name==='report')   renderReport();
+  if(name==='delivery') renderDelivery();
+  if(name==='sales')    renderSales();
+  if(name==='admin')    renderAdmin();
+}
+
+// ─── STOCK ────────────────────────────────────────────────────────────
+function renderStock(){
+  const prods=loadProds().filter(p=>p.active);
+  const sm=stocksMap();
+  const sorted=[...prods].sort((a,b)=>(sm[a.id]||0)-(sm[b.id]||0));
+  document.getElementById('screen-stock').innerHTML=`
+    <div class="srch-wrap">
+      <span class="srch-icon">🔍</span>
+      <input class="srch-box" type="text" placeholder="検索 / Tìm kiếm..." oninput="filterStock(this.value)">
+    </div>
+    <div class="stock-list" id="sl">
+      ${sorted.map(p=>{
+        const q=sm[p.id]||0;
+        const cls=q===0?'danger':q<=p.warnAt?'warn':'';
+        return `<div class="stock-item ${cls}" data-n="${p.nameJa} ${p.nameVi}">
+          <div class="names"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div><div class="unit-tag">${p.unit}</div></div>
+          <div class="stock-qty">${q}</div>
+        </div>`;
+      }).join('')}
+    </div>`;
+}
+function filterStock(q){
+  document.querySelectorAll('#sl .stock-item').forEach(el=>{
+    el.style.display=el.dataset.n.toLowerCase().includes(q.toLowerCase())?'':'none';
+  });
+}
+
+// ─── REPORT ───────────────────────────────────────────────────────────
+const rVals={}, rChk={};
+function renderReport(){
+  const prods=loadProds().filter(p=>p.active);
+  const sm=stocksMap();
+  const sorted=[...prods].sort((a,b)=>(sm[a.id]||0)-(sm[b.id]||0));
+  document.getElementById('screen-report').innerHTML=`
+    <p style="font-size:12px;color:var(--text-sub);margin-bottom:12px">
+      報告したい商品を選択して実際の残数を入力してください。<br>
+      <span style="font-size:11px">Chọn sản phẩm và nhập số lượng thực tế còn lại.</span>
+    </p>
+    <div id="rl">${sorted.map(p=>repItemHTML(p,sm[p.id]||0)).join('')}</div>
+    <div class="mt12">
+      <button class="btn btn-accent" onclick="genSS()">
+        📋 スクリーンショット用リスト生成
+        <span class="vi">Tạo danh sách chụp màn hình</span>
+      </button>
+    </div>
+    <div class="mt8">
+      <button class="btn btn-primary" onclick="submitReport()">
+        ✓ 残数を確定・在庫を更新
+        <span class="vi">Xác nhận & cập nhật tồn kho</span>
+      </button>
+    </div>`;
+}
+function repItemHTML(p,est){
+  if(!(p.id in rVals)) rVals[p.id]=est;
+  const on=!!rChk[p.id];
+  return `<div class="report-item" id="ri-${p.id}">
+    <div class="report-hdr ${on?'checked':''}" onclick="togR('${p.id}')">
+      <div class="chk ${on?'on':''}" id="rcb-${p.id}">✓</div>
+      <div class="names" style="flex:1"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div></div>
+      <div style="font-size:11px;color:var(--text-sub);text-align:right">推定<br><strong style="font-size:16px;color:var(--navy)">${est}</strong></div>
+    </div>
+    <div class="report-body ${on?'open':''}" id="rb-${p.id}">
+      <p style="font-size:12px;color:var(--text-sub);margin:12px 0 6px">実際の残数 / Số lượng thực tế còn lại：</p>
+      <div class="stepper">
+        <button class="step-btn" onclick="stepR('${p.id}',-1)">−</button>
+        <div class="step-val" id="rv-${p.id}">${rVals[p.id]}</div>
+        <button class="step-btn" onclick="stepR('${p.id}',1)">＋</button>
+      </div>
+    </div>
+  </div>`;
+}
+function togR(id){
+  rChk[id]=!rChk[id];
+  document.querySelector(`#ri-${id} .report-hdr`).classList.toggle('checked',rChk[id]);
+  document.getElementById('rcb-'+id).classList.toggle('on',rChk[id]);
+  document.getElementById('rb-'+id).classList.toggle('open',rChk[id]);
+}
+function stepR(id,d){
+  rVals[id]=Math.max(0,(rVals[id]||0)+d);
+  const el=document.getElementById('rv-'+id);
+  if(el) el.textContent=rVals[id];
+}
+function genSS(){
+  const ids=Object.keys(rChk).filter(id=>rChk[id]);
+  if(!ids.length){toast('商品を選択してください');return;}
+  const prods=loadProds();
+  const now=new Date();
+  document.getElementById('ss-date').textContent=
+    `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()}`;
+  document.getElementById('ss-table').innerHTML=ids.map(id=>{
+    const p=prods.find(x=>x.id===id);
+    if(!p) return '';
+    return `<tr><td><div class="name-ja">${p.nameJa}</div><div class="name-vi" style="font-size:12px;color:#777">${p.nameVi}</div></td><td class="item-qty">${rVals[id]??0}</td></tr>`;
+  }).join('');
+  document.getElementById('ss-view').classList.add('open');
+}
+function submitReport(){
+  const ids=Object.keys(rChk).filter(id=>rChk[id]);
+  if(!ids.length){toast('商品を選択してください');return;}
+  confirm2('在庫を更新しますか？',`${ids.length}品の残数を在庫に反映します。\nCập nhật tồn kho ${ids.length} sản phẩm?`,()=>{
+    addEvt('adjust',ids.map(id=>({productId:id,qty:rVals[id]||0})),'残数報告による修正');
+    ids.forEach(id=>delete rChk[id]);
+    toast('在庫を更新しました ✓');
+    renderReport();
+  });
+}
+
+// ─── DELIVERY ─────────────────────────────────────────────────────────
+const dVals={}, dChk={};
+function renderDelivery(){
+  const prods=loadProds().filter(p=>p.active);
+  const evts=loadEvts();
+  const lastAdj=[...evts].reverse().find(e=>e.type==='adjust');
+  let items=lastAdj
+    ? lastAdj.items.map(i=>prods.find(p=>p.id===i.productId)).filter(Boolean)
+    : prods;
+  items.forEach(p=>{ if(!(p.id in dVals)) dVals[p.id]=0; });
+
+  document.getElementById('screen-delivery').innerHTML=`
+    <p style="font-size:12px;color:var(--text-sub);margin-bottom:4px">
+      届いた商品をチェックして数量を入力してください。<br>
+      <span style="font-size:11px">Kiểm tra hàng nhận được và nhập số lượng.</span>
+    </p>
+    ${lastAdj?`<p style="font-size:11px;color:var(--text-sub);margin-bottom:12px">前回の残数報告より / Từ báo cáo lần trước</p>`:''}
+    <div id="dl">${items.map(p=>delItemHTML(p)).join('')}</div>
+    <div id="d-add" class="mt8">
+      <button class="btn btn-ghost btn-sm" onclick="showAllDel()">＋ 他の商品を追加 / Thêm sản phẩm khác</button>
+    </div>
+    <div class="mt12">
+      <button class="btn btn-primary" onclick="submitDel()">
+        ✓ 受取完了・在庫へ加算
+        <span class="vi">Xác nhận đã nhận & cộng vào tồn kho</span>
+      </button>
+    </div>`;
+}
+function delItemHTML(p){
+  const on=!!dChk[p.id];
+  return `<div class="d-item" id="di-${p.id}">
+    <div class="d-row">
+      <div class="chk ${on?'on':''}" id="dcb-${p.id}" onclick="togD('${p.id}')" style="cursor:pointer">✓</div>
+      <div class="names" style="flex:1"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div></div>
+      <div class="stepper" style="width:auto">
+        <button class="step-btn" style="width:46px;height:46px" onclick="stepD('${p.id}',-1)">−</button>
+        <div class="step-val" id="dv-${p.id}" style="font-size:22px;min-width:46px">${dVals[p.id]||0}</div>
+        <button class="step-btn" style="width:46px;height:46px" onclick="stepD('${p.id}',1)">＋</button>
+      </div>
+    </div>
+  </div>`;
+}
+function togD(id){
+  dChk[id]=!dChk[id];
+  const cb=document.getElementById('dcb-'+id);
+  if(cb) cb.classList.toggle('on',dChk[id]);
+}
+function stepD(id,d){
+  dVals[id]=Math.max(0,(dVals[id]||0)+d);
+  const el=document.getElementById('dv-'+id);
+  if(el) el.textContent=dVals[id];
+  if(dVals[id]>0&&!dChk[id]){dChk[id]=true;const cb=document.getElementById('dcb-'+id);if(cb)cb.classList.add('on');}
+}
+function showAllDel(){
+  const prods=loadProds().filter(p=>p.active);
+  const dl=document.getElementById('dl');
+  prods.forEach(p=>{
+    if(!document.getElementById('di-'+p.id)){
+      dVals[p.id]=dVals[p.id]||0;
+      dl.insertAdjacentHTML('beforeend',delItemHTML(p));
+    }
+  });
+  document.getElementById('d-add').style.display='none';
+}
+function submitDel(){
+  const ids=Object.keys(dChk).filter(id=>dChk[id]&&dVals[id]>0);
+  if(!ids.length){toast('商品と数量を入力してください');return;}
+  confirm2('受取完了',`${ids.length}品を在庫へ加算します。\nCộng ${ids.length} sản phẩm vào tồn kho?`,()=>{
+    addEvt('delivery',ids.map(id=>({productId:id,qty:dVals[id]})),'納品確認');
+    ids.forEach(id=>{delete dChk[id];dVals[id]=0;});
+    toast('在庫へ加算しました ✓');
+    renderDelivery();
+  });
+}
+
+// ─── SALES ────────────────────────────────────────────────────────────
+const sVals={};
+function renderSales(){
+  const prods=loadProds().filter(p=>p.active);
+  const sm=stocksMap();
+  const sorted=[...prods].sort((a,b)=>a.nameJa.localeCompare(b.nameJa,'ja'));
+  document.getElementById('screen-sales').innerHTML=`
+    <p style="font-size:12px;color:var(--text-sub);margin-bottom:12px">
+      今日売れた数量を入力してください。<br>
+      <span style="font-size:11px">Nhập số lượng đã bán hôm nay.</span>
+    </p>
+    <div>${sorted.map(p=>{
+      if(!(p.id in sVals)) sVals[p.id]=0;
+      return `<div class="s-item">
+        <div class="names" style="flex:1"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div><div class="unit-tag">在庫 ${sm[p.id]||0} ${p.unit}</div></div>
+        <div class="stepper">
+          <button class="step-btn" onclick="stepS('${p.id}',-1)">−</button>
+          <div class="step-val" id="sv-${p.id}">${sVals[p.id]}</div>
+          <button class="step-btn" onclick="stepS('${p.id}',1)">＋</button>
+        </div>
+      </div>`;
+    }).join('')}</div>
+    <div class="mt12">
+      <button class="btn btn-primary" onclick="submitSales()">
+        ✓ 販売を確定・在庫から差引
+        <span class="vi">Xác nhận bán hàng & trừ tồn kho</span>
+      </button>
+    </div>`;
+}
+function stepS(id,d){
+  sVals[id]=Math.max(0,(sVals[id]||0)+d);
+  const el=document.getElementById('sv-'+id);
+  if(el) el.textContent=sVals[id];
+}
+function submitSales(){
+  const items=Object.entries(sVals).filter(([,q])=>q>0).map(([pid,qty])=>({productId:pid,qty}));
+  if(!items.length){toast('数量を入力してください');return;}
+  confirm2('販売を確定しますか？',`${items.length}品の販売数を在庫から差し引きます。\nTrừ tồn kho ${items.length} sản phẩm?`,()=>{
+    addEvt('sale',items,'販売確定');
+    items.forEach(i=>{sVals[i.productId]=0;});
+    toast('販売を確定しました ✓');
+    renderSales();
+  });
+}
+
+// ─── ADMIN ────────────────────────────────────────────────────────────
+let addFormOpen=false;
+function renderAdmin(){
+  const prods=loadProds();
+  const sm=stocksMap();
+  const evts=[...loadEvts()].reverse().slice(0,40);
+  const typeLabel={init:'初回登録',adjust:'在庫修正',delivery:'納品',sale:'販売',product_add:'商品追加'};
+  document.getElementById('screen-admin').innerHTML=`
+    <div class="adm-sec">
+      <div class="adm-hdr" onclick="togAddForm()">➕ 商品を追加 / Thêm sản phẩm</div>
+      <div id="add-form" style="display:${addFormOpen?'block':'none'}" class="adm-body">
+        <div class="form-group"><label class="form-label">日本語名 / Tên tiếng Nhật</label><input class="form-input" id="np-ja" type="text" placeholder="例：ホタテ"></div>
+        <div class="form-group"><label class="form-label">ベトナム語名 / Tên tiếng Việt</label><input class="form-input" id="np-vi" type="text" placeholder="Ví dụ: Sò điệp"></div>
+        <div class="form-group"><label class="form-label">単位 / Đơn vị</label><input class="form-input" id="np-unit" type="text" placeholder="份 / 袋 / 本 / 個"></div>
+        <div class="form-group"><label class="form-label">警告ライン / Mức cảnh báo</label><input class="form-input" id="np-warn" type="number" min="0" value="2"></div>
+        <button class="btn btn-primary" onclick="addProd()">追加 / Thêm</button>
+      </div>
+    </div>
+    <div class="adm-sec">
+      <div class="adm-hdr">📋 商品一覧 / Danh sách sản phẩm</div>
+      <div class="adm-body" style="padding:0 16px">
+        ${prods.map(p=>`
+          <div class="prod-row">
+            <div class="names" style="flex:1"><div class="name-ja">${p.nameJa}</div><div class="name-vi">${p.nameVi}</div><div class="unit-tag">在庫 ${sm[p.id]||0} / 警告 ${p.warnAt}</div></div>
+            <span class="badge ${p.active?'':'off'}">${p.active?'使用中':'終了'}</span>
+            <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;margin-left:6px" onclick="togProd('${p.id}')">${p.active?'停止':'復活'}</button>
+          </div>`).join('')}
+      </div>
+    </div>
+    <div class="adm-sec">
+      <div class="adm-hdr">📜 履歴 / Lịch sử</div>
+      <div class="adm-body" style="padding:0 16px">
+        ${evts.length?evts.map(ev=>{
+          const detail=(ev.items||[]).map(i=>{const p=prods.find(x=>x.id===i.productId);return`${p?p.nameJa:i.productId}:${i.qty}`;}).join(', ');
+          const d=new Date(ev.at);
+          const ts=`${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
+          return`<div class="hist-item"><div class="hist-time">${ts}</div><div class="hist-desc">${typeLabel[ev.type]||ev.type}</div><div class="hist-detail">${detail}</div></div>`;
+        }).join(''):'<div class="empty"><p>履歴なし / Chưa có lịch sử</p></div>'}
+      </div>
+    </div>
+    <div class="mt12" style="margin-bottom:20px">
+      <button class="btn btn-ghost" style="color:var(--danger);border-color:var(--danger)" onclick="resetAll()">⚠️ データをリセット / Xóa toàn bộ dữ liệu</button>
+    </div>`;
+}
+function togAddForm(){
+  addFormOpen=!addFormOpen;
+  const f=document.getElementById('add-form');
+  if(f) f.style.display=addFormOpen?'block':'none';
+}
+function addProd(){
+  const ja=document.getElementById('np-ja').value.trim();
+  const vi=document.getElementById('np-vi').value.trim();
+  const unit=document.getElementById('np-unit').value.trim()||'份';
+  const warn=parseInt(document.getElementById('np-warn').value)||2;
+  if(!ja||!vi){toast('名前を入力してください');return;}
+  const prods=loadProds();
+  const id='p_'+Date.now();
+  prods.push({id,nameJa:ja,nameVi:vi,unit,warnAt:warn,active:true});
+  saveProds(prods);
+  addEvt('product_add',[],'商品追加: '+ja);
+  toast(ja+' を追加しました ✓');
+  addFormOpen=false;
+  renderAdmin();
+}
+function togProd(id){
+  const prods=loadProds();
+  const p=prods.find(x=>x.id===id);
+  if(!p) return;
+  p.active=!p.active;
+  saveProds(prods);
+  toast(p.nameJa+'を'+(p.active?'使用中':'取扱終了')+'にしました');
+  renderAdmin();
+}
+function resetAll(){
+  confirm2('⚠️ データを削除','すべての在庫・履歴データを削除します。この操作は元に戻せません。\nXóa toàn bộ dữ liệu. Không thể hoàn tác.',()=>{
+    localStorage.removeItem('hk_products');
+    localStorage.removeItem('hk_events');
+    location.reload();
+  },true);
+}
+
+// ─── CONFIRM ─────────────────────────────────────────────────────────
+let confCB=null;
+function confirm2(title,body,ok,danger=false){
+  document.getElementById('conf-title').textContent=title;
+  document.getElementById('conf-body').textContent=body;
+  const btn=document.getElementById('conf-ok');
+  btn.className='btn '+(danger?'btn-danger':'btn-primary');
+  confCB=ok;
+  document.getElementById('conf').classList.add('open');
+}
+function closeConf(){document.getElementById('conf').classList.remove('open');confCB=null;}
+document.getElementById('conf-ok').onclick=()=>{closeConf();if(confCB)confCB();};
+
+// ─── TOAST ───────────────────────────────────────────────────────────
+let tTimer;
+function toast(msg){
+  const el=document.getElementById('toast');
+  el.textContent=msg;el.classList.add('show');
+  clearTimeout(tTimer);tTimer=setTimeout(()=>el.classList.remove('show'),2500);
+}
+
+// ─── BOOT ─────────────────────────────────────────────────────────────
+boot();
+renderStock();
+</script>
+</body>
+</html>
