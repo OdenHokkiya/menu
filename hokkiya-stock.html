@@ -221,7 +221,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
     <div class="conf-title" id="conf-title"></div>
     <div class="conf-body"  id="conf-body"></div>
     <div class="conf-acts">
-      <button class="btn btn-ghost" onclick="closeConf()">${t('cancel')}</button>
+      <button class="btn btn-ghost" onclick="closeConf()" id="conf-cancel">キャンセル</button>
       <button class="btn btn-primary" id="conf-ok">確認</button>
     </div>
   </div>
@@ -774,7 +774,6 @@ function submitDel(){
     addEvt('delivery',ids.map(id=>({productId:id,qty:dVals[id]})),'納品確認');
     ids.forEach(id=>{delete dChk[id];dVals[id]=0;});
     toast(t('toastDelivered'));
-    closeOcr();
     go('stock');
   });
 }
@@ -817,7 +816,7 @@ function submitSales(){
     addEvt('sale',items,'販売確定');
     items.forEach(i=>{sVals[i.productId]=0;});
     toast(t('toastSold'));
-    renderSales();
+    go('stock');
   });
 }
 
@@ -1007,6 +1006,10 @@ function renderAdmin(){
           ${t('btnLoad')}<input type="file" accept=".json" style="display:none" onchange="importData(this)">
         </label>
       </div>
+    </div>
+    <div class="adm-sec" style="margin-bottom:20px">
+      <div class="adm-hdr" onclick="toggleDebug()" style="cursor:pointer">🔍 デバッグ情報を確認</div>
+      <div id="debug-body" style="display:none;padding:12px 16px"></div>
     </div>`;
 }
 function togAddForm(){
@@ -1203,6 +1206,66 @@ function confirmOcrDelivery(){
   go('stock');
 }
 
+function toggleDebug(){
+  const body=document.getElementById('debug-body');
+  if(!body) return;
+  if(body.style.display==='block'){body.style.display='none';return;}
+  body.style.display='block';
+
+  const evts=loadEvts();
+  const prods=loadProds();
+  const sm=stocksMap();
+
+  // Last 5 events
+  const recentEvts=[...evts].reverse().slice(0,5);
+  const evtHTML=recentEvts.map(ev=>{
+    const detail=(ev.items||[]).map(i=>{
+      const p=prods.find(x=>x.id===i.productId);
+      return `${p?p.nameJa:i.productId}:${i.qty}`;
+    }).join(', ');
+    return `<div style="padding:4px 0;border-bottom:1px solid var(--border);font-size:12px">
+      <span style="color:var(--accent)">[${ev.type}]</span> ${detail}
+    </div>`;
+  }).join('');
+
+  // Current stocks (non-zero)
+  const stockHTML=prods.filter(p=>p.active&&(sm[p.id]||0)>0).map(p=>
+    `<div style="font-size:12px;padding:2px 0">${p.nameJa}: <strong>${sm[p.id]}</strong></div>`
+  ).join('');
+
+  body.innerHTML=`
+    <p style="font-weight:700;margin-bottom:6px">イベント数: ${evts.length}</p>
+    <p style="font-weight:700;margin-bottom:4px">直近5件:</p>
+    ${evtHTML || '<div style="color:var(--text-sub)">なし</div>'}
+    <p style="font-weight:700;margin:10px 0 4px">現在の在庫（0以外）:</p>
+    ${stockHTML || '<div style="color:var(--text-sub)">すべて0</div>'}
+    <div style="margin-top:10px">
+      <button class="btn btn-ghost btn-sm" onclick="copyDebug()" style="width:auto;padding:8px 16px">
+        📋 デバッグ情報をコピー
+      </button>
+    </div>`;
+}
+
+function copyDebug(){
+  const evts=loadEvts();
+  const prods=loadProds();
+  const sm=stocksMap();
+  const text=[
+    `イベント数: ${evts.length}`,
+    `直近3件:`,
+    ...[...evts].reverse().slice(0,3).map(ev=>{
+      const detail=(ev.items||[]).map(i=>{
+        const p=prods.find(x=>x.id===i.productId);
+        return `${p?p.nameJa:i.productId}:${i.qty}`;
+      }).join(', ');
+      return `  [${ev.type}] ${detail}`;
+    }),
+    `在庫:`,
+    ...prods.filter(p=>p.active).map(p=>`  ${p.nameJa}: ${sm[p.id]||0}`),
+  ].join('\n');
+  navigator.clipboard.writeText(text).then(()=>toast('コピーしました')).catch(()=>toast('コピー失敗'));
+}
+
 // ─── BACKUP / RESTORE ────────────────────────────────────────────────
 function exportData(){
   const data={
@@ -1260,6 +1323,7 @@ function confirm2(title,body,ok,danger=false){
   const btn=document.getElementById('conf-ok');
   btn.className='btn '+(danger?'btn-danger':'btn-primary');
   btn.textContent=t('confirmOk');
+  document.getElementById('conf-cancel').textContent=t('cancel');
   confCB=ok;
   document.getElementById('conf').classList.add('open');
 }
