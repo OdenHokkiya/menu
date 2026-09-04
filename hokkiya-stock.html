@@ -31,8 +31,9 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
 .stock-qty{font-size:30px;font-weight:800;min-width:44px;text-align:right;color:var(--navy)}
 .stock-item.danger .stock-qty{color:var(--danger)}
 .stock-item.warn .stock-qty{color:var(--warn)}
-/* report */
-.report-item{background:var(--surface);border-radius:var(--r);margin-bottom:10px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.06)}
+/* stock+report integrated */
+.stock-item.sr-checked{border-left-color:var(--navy)!important;background:#f0f7ff!important}
+.stock-item.sr-checked .stock-qty{color:var(--navy)}
 .report-hdr{display:flex;align-items:center;gap:12px;padding:14px 16px;cursor:pointer}
 .report-hdr.checked{background:#f0f7ff}
 .chk{width:26px;height:26px;border-radius:6px;border:2px solid var(--border);background:#fff;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:14px;color:#fff;transition:all .15s}
@@ -138,17 +139,13 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
 </header>
 
 <div id="screen-stock"    class="screen active"></div>
-<div id="screen-report"   class="screen"></div>
 <div id="screen-delivery" class="screen"></div>
 <div id="screen-sales"    class="screen"></div>
 <div id="screen-admin"    class="screen"></div>
 
 <nav class="nav">
   <button class="nav-btn active" onclick="go('stock')"    data-s="stock">
-    <span class="icon">🧊</span><span style="font-size:10px">Tồn kho</span><span style="font-size:9px;opacity:.8">在庫</span>
-  </button>
-  <button class="nav-btn" onclick="go('report')"   data-s="report">
-    <span class="icon">📝</span><span style="font-size:10px">Báo số</span><span style="font-size:9px;opacity:.8">残数報告</span>
+    <span class="icon">🧊</span><span style="font-size:10px">Tồn kho</span><span style="font-size:9px;opacity:.8">在庫・報告</span>
   </button>
   <button class="nav-btn" onclick="go('delivery')" data-s="delivery">
     <span class="icon">📦</span><span style="font-size:10px">Nhận hàng</span><span style="font-size:9px;opacity:.8">納品</span>
@@ -165,12 +162,13 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
 <div id="ss-view">
   <div class="ss-hdr">
     <div class="ss-logo">HOKKIYA</div>
-    <div class="ss-sub">残数報告 / BÁO SỐ LƯỢNG CÒN LẠI</div>
+    <div class="ss-sub">BÁO SỐ LƯỢNG CÒN LẠI</div>
     <div class="ss-date" id="ss-date"></div>
+    <div id="ss-order-msg" style="margin-top:10px;font-size:15px;font-weight:700;color:#333"></div>
   </div>
   <table class="ss-table" id="ss-table"></table>
   <div style="height:80px"></div>
-  <button class="ss-close" onclick="document.getElementById('ss-view').classList.remove('open')">✕ 閉じる / Đóng</button>
+  <button class="ss-close" onclick="document.getElementById('ss-view').classList.remove('open')">✕ Đóng / 閉じる</button>
 </div>
 
 <!-- Init -->
@@ -339,119 +337,137 @@ function go(name){
 }
 function render(name){
   if(name==='stock')    renderStock();
-  if(name==='report')   renderReport();
   if(name==='delivery') renderDelivery();
   if(name==='sales')    renderSales();
   if(name==='admin')    renderAdmin();
 }
 
-// ─── STOCK ────────────────────────────────────────────────────────────
+// ─── STOCK + REPORT (統合) ────────────────────────────────────────────
+const rVals={}, rChk={};
+
 function renderStock(){
   const prods=loadProds().filter(p=>p.active);
   const sm=stocksMap();
   const sorted=[...prods].sort((a,b)=>(sm[a.id]||0)-(sm[b.id]||0));
+
   document.getElementById('screen-stock').innerHTML=`
-    <div class="srch-wrap">
+    <div class="srch-wrap" style="margin-bottom:8px">
       <span class="srch-icon">🔍</span>
-      <input class="srch-box" type="text" placeholder="検索 / Tìm kiếm..." oninput="filterStock(this.value)">
+      <input class="srch-box" type="text" placeholder="Tìm kiếm / 検索..." oninput="filterStock(this.value)" style="margin-bottom:0">
     </div>
+    <p style="font-size:11px;color:var(--text-sub);margin-bottom:10px">
+      Nhấn vào sản phẩm để chọn báo số lượng.<br>
+      <span style="font-size:10px">商品をタップして残数報告に選択。</span>
+    </p>
     <div class="stock-list" id="sl">
-      ${sorted.map(p=>{
-        const q=sm[p.id]||0;
-        const cls=q===0?'danger':q<=p.warnAt?'warn':'';
-        return `<div class="stock-item ${cls}" data-n="${p.nameJa} ${p.nameVi}">
-          <div class="names"><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div><div class="unit-tag">${p.unit}</div></div>
-          <div class="stock-qty">${q}</div>
-        </div>`;
-      }).join('')}
+      ${sorted.map(p=>stockReportItemHTML(p, sm[p.id]||0)).join('')}
+    </div>
+    <div id="ss-btns" style="display:none;position:sticky;bottom:calc(var(--nav-h) + 8px);padding:10px 0;background:var(--bg)">
+      <button class="btn btn-accent" onclick="genSS()">
+        📋 スクリーンショット生成 / Tạo danh sách
+      </button>
+      <div class="mt8">
+        <button class="btn btn-primary" onclick="submitReport()">
+          ✓ 在庫を更新 / Cập nhật tồn kho
+        </button>
+      </div>
     </div>`;
 }
+
+function stockReportItemHTML(p, qty){
+  const cls = qty===0?'danger': qty<=p.warnAt?'warn':'';
+  const on = !!rChk[p.id];
+  if(!(p.id in rVals)) rVals[p.id]=qty;
+  return `
+    <div class="stock-item ${cls} ${on?'sr-checked':''}" id="sri-${p.id}" data-n="${p.nameJa} ${p.nameVi}" style="cursor:pointer;flex-direction:column;align-items:stretch;padding:0;gap:0">
+      <div style="display:flex;align-items:center;gap:12px;padding:14px 16px" onclick="togSR('${p.id}',${qty})">
+        <div class="chk ${on?'on':''}" id="srcb-${p.id}">✓</div>
+        <div class="names" style="flex:1">
+          <div class="name-vi">${p.nameVi}</div>
+          <div class="name-ja">${p.nameJa}</div>
+        </div>
+        <div class="stock-qty" style="font-size:26px">${qty}</div>
+      </div>
+      <div id="srb-${p.id}" style="display:${on?'block':'none'};padding:0 16px 14px;border-top:1px solid var(--border)">
+        <p style="font-size:11px;color:var(--text-sub);margin:8px 0 6px">Số lượng thực tế / 実際の残数：</p>
+        <div class="stepper">
+          <button class="step-btn" onclick="stepSR('${p.id}',-1)">−</button>
+          <div class="step-val" id="srv-${p.id}">${rVals[p.id]}</div>
+          <button class="step-btn" onclick="stepSR('${p.id}',1)">＋</button>
+        </div>
+      </div>
+    </div>`;
+}
+
+function togSR(id, estQty){
+  rChk[id]=!rChk[id];
+  if(!(id in rVals)) rVals[id]=estQty;
+  const cb=document.getElementById('srcb-'+id);
+  const body=document.getElementById('srb-'+id);
+  const item=document.getElementById('sri-'+id);
+  if(cb) cb.classList.toggle('on', rChk[id]);
+  if(body) body.style.display=rChk[id]?'block':'none';
+  if(item) item.classList.toggle('sr-checked', rChk[id]);
+  // Show/hide bottom buttons
+  const anyChecked=Object.values(rChk).some(v=>v);
+  const btns=document.getElementById('ss-btns');
+  if(btns) btns.style.display=anyChecked?'block':'none';
+}
+
+function stepSR(id,d){
+  rVals[id]=Math.max(0,(rVals[id]||0)+d);
+  const el=document.getElementById('srv-'+id);
+  if(el) el.textContent=rVals[id];
+}
+
 function filterStock(q){
   document.querySelectorAll('#sl .stock-item').forEach(el=>{
     el.style.display=el.dataset.n.toLowerCase().includes(q.toLowerCase())?'':'none';
   });
 }
 
-// ─── REPORT ───────────────────────────────────────────────────────────
-const rVals={}, rChk={};
-function renderReport(){
-  const prods=loadProds().filter(p=>p.active);
-  const sm=stocksMap();
-  const sorted=[...prods].sort((a,b)=>(sm[a.id]||0)-(sm[b.id]||0));
-  document.getElementById('screen-report').innerHTML=`
-    <p style="font-size:12px;color:var(--text-sub);margin-bottom:12px">
-      報告したい商品を選択して実際の残数を入力してください。<br>
-      <span style="font-size:11px">Chọn sản phẩm và nhập số lượng thực tế còn lại.</span>
-    </p>
-    <div id="rl">${sorted.map(p=>repItemHTML(p,sm[p.id]||0)).join('')}</div>
-    <div class="mt12">
-      <button class="btn btn-accent" onclick="genSS()">
-        📋 スクリーンショット用リスト生成
-        <span class="vi">Tạo danh sách chụp màn hình</span>
-      </button>
-    </div>
-    <div class="mt8">
-      <button class="btn btn-primary" onclick="submitReport()">
-        ✓ 残数を確定・在庫を更新
-        <span class="vi">Xác nhận & cập nhật tồn kho</span>
-      </button>
-    </div>`;
-}
-function repItemHTML(p,est){
-  if(!(p.id in rVals)) rVals[p.id]=est;
-  const on=!!rChk[p.id];
-  return `<div class="report-item" id="ri-${p.id}">
-    <div class="report-hdr ${on?'checked':''}" onclick="togR('${p.id}')">
-      <div class="chk ${on?'on':''}" id="rcb-${p.id}">✓</div>
-      <div class="names" style="flex:1"><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div></div>
-      <div style="font-size:11px;color:var(--text-sub);text-align:right">推定<br><strong style="font-size:16px;color:var(--navy)">${est}</strong></div>
-    </div>
-    <div class="report-body ${on?'open':''}" id="rb-${p.id}">
-      <p style="font-size:12px;color:var(--text-sub);margin:12px 0 6px">実際の残数 / Số lượng thực tế còn lại：</p>
-      <div class="stepper">
-        <button class="step-btn" onclick="stepR('${p.id}',-1)">−</button>
-        <div class="step-val" id="rv-${p.id}">${rVals[p.id]}</div>
-        <button class="step-btn" onclick="stepR('${p.id}',1)">＋</button>
-      </div>
-    </div>
-  </div>`;
-}
-function togR(id){
-  rChk[id]=!rChk[id];
-  document.querySelector(`#ri-${id} .report-hdr`).classList.toggle('checked',rChk[id]);
-  document.getElementById('rcb-'+id).classList.toggle('on',rChk[id]);
-  document.getElementById('rb-'+id).classList.toggle('open',rChk[id]);
-}
-function stepR(id,d){
-  rVals[id]=Math.max(0,(rVals[id]||0)+d);
-  const el=document.getElementById('rv-'+id);
-  if(el) el.textContent=rVals[id];
-}
 function genSS(){
   const ids=Object.keys(rChk).filter(id=>rChk[id]);
   if(!ids.length){toast('商品を選択してください');return;}
   const prods=loadProds();
   const now=new Date();
-  document.getElementById('ss-date').textContent=
-    `${now.getDate().toString().padStart(2,'0')}/${(now.getMonth()+1).toString().padStart(2,'0')}/${now.getFullYear()}`;
+
+  // Vietnamese day names
+  const daysVi=['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
+  const dayVi=daysVi[now.getDay()];
+  const dd=now.getDate().toString().padStart(2,'0');
+  const mm=(now.getMonth()+1).toString().padStart(2,'0');
+  const yyyy=now.getFullYear();
+
+  document.getElementById('ss-date').textContent=`${dayVi}, ${dd}/${mm}/${yyyy}`;
+  document.getElementById('ss-order-msg').textContent='Nhờ anh giao hàng giúp em ạ 🙏';
+
   document.getElementById('ss-table').innerHTML=ids.map(id=>{
     const p=prods.find(x=>x.id===id);
     if(!p) return '';
-    return `<tr><td><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div></td><td class="item-qty">${rVals[id]??0}</td></tr>`;
+    return `<tr>
+      <td><div class="name-vi">${p.nameVi}</div><div class="name-ja" style="font-size:11px;color:#999">${p.nameJa}</div></td>
+      <td class="item-qty">${rVals[id]??0}</td>
+    </tr>`;
   }).join('');
   document.getElementById('ss-view').classList.add('open');
 }
+
 function submitReport(){
   const ids=Object.keys(rChk).filter(id=>rChk[id]);
   if(!ids.length){toast('商品を選択してください');return;}
-  confirm2('在庫を更新しますか？',`${ids.length}品の残数を在庫に反映します。\nCập nhật tồn kho ${ids.length} sản phẩm?`,()=>{
+  confirm2('在庫を更新しますか？',`${ids.length}品の残数を在庫に反映。\nCập nhật tồn kho ${ids.length} sản phẩm?`,()=>{
     addEvt('adjust',ids.map(id=>({productId:id,qty:rVals[id]||0})),'残数報告による修正');
-    ids.forEach(id=>delete rChk[id]);
+    ids.forEach(id=>{
+      delete rChk[id];
+      delete rVals[id];
+    });
     toast('在庫を更新しました ✓');
-    renderReport();
+    renderStock();
   });
 }
 
+// ─── DELIVERY ─────────────────────────────────────────────────────────
 // ─── DELIVERY ─────────────────────────────────────────────────────────
 const dVals={}, dChk={};
 function renderDelivery(){
