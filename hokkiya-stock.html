@@ -221,8 +221,8 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
     <div class="conf-title" id="conf-title"></div>
     <div class="conf-body"  id="conf-body"></div>
     <div class="conf-acts">
-      <button class="btn btn-ghost" onclick="closeConf()" id="conf-cancel">キャンセル</button>
-      <button class="btn btn-primary" id="conf-ok">確認</button>
+      <button class="btn btn-ghost" id="conf-cancel" onclick="closeConf()">キャンセル</button>
+      <button class="btn btn-primary" id="conf-ok" onclick="doConf()">確認</button>
     </div>
   </div>
 </div>
@@ -1320,15 +1320,21 @@ let confCB=null;
 function confirm2(title,body,ok,danger=false){
   document.getElementById('conf-title').textContent=title;
   document.getElementById('conf-body').textContent=body;
-  const btn=document.getElementById('conf-ok');
-  btn.className='btn '+(danger?'btn-danger':'btn-primary');
-  btn.textContent=t('confirmOk');
-  document.getElementById('conf-cancel').textContent=t('cancel');
+  const okBtn=document.getElementById('conf-ok');
+  okBtn.className='btn '+(danger?'btn-danger':'btn-primary');
+  okBtn.textContent=lang==='vi'?'Xác nhận':'確認';
+  document.getElementById('conf-cancel').textContent=lang==='vi'?'Hủy':'キャンセル';
   confCB=ok;
   document.getElementById('conf').classList.add('open');
 }
-function closeConf(){document.getElementById('conf').classList.remove('open');confCB=null;}
-document.getElementById('conf-ok').onclick=()=>{closeConf();if(confCB)confCB();};
+function doConf(){
+  closeConf();
+  if(confCB) confCB();
+}
+function closeConf(){
+  document.getElementById('conf').classList.remove('open');
+  confCB=null;
+}
 
 // ─── TOAST ───────────────────────────────────────────────────────────
 let tTimer;
