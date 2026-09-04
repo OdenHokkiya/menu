@@ -456,7 +456,8 @@ function pname(p) {
   return lang === 'vi' ? p.nameVi : p.nameJa;
 }
 function pnamesub(p) {
-  return lang === 'vi' ? p.nameJa : p.nameVi;
+  if (lang === 'vi') return p.nameRo || p.nameJa;
+  return p.nameVi;
 }
 
 function toggleLang() {
@@ -490,47 +491,57 @@ function applyLang() {
 // ─── PRODUCT MASTER ───────────────────────────────────────────────────
 const DEFAULT_PRODUCTS = [
   // 料理
-  {id:'ramen_salad',   nameJa:'ラーメンサラダ',         nameVi:'Salad mì ramen',             unit:'袋', warnAt:2, active:true},
-  {id:'asupara',       nameJa:'アスパラバター',           nameVi:'Măng tây xào bơ',            unit:'份', warnAt:2, active:true},
-  {id:'corn',          nameJa:'コーンバター',             nameVi:'Bắp Ngọt Xào Bơ',           unit:'份', warnAt:2, active:true},
-  {id:'tako_zangi',    nameJa:'たこザンギ',               nameVi:'Bạch tuộc chiên',            unit:'份', warnAt:2, active:true},
-  {id:'tori_zangi',    nameJa:'若どりザンギ',             nameVi:'Gà Chiên Zangi',             unit:'份', warnAt:2, active:true},
-  {id:'horumon',       nameJa:'塩ホルモン',               nameVi:'Lòng heo nướng muối',        unit:'份', warnAt:2, active:true},
-  {id:'jaga_bata',     nameJa:'塩辛じゃがバター',         nameVi:'Khoai Tây Bơ Mắm Mực',      unit:'個', warnAt:3, active:true},
-  {id:'salmon',        nameJa:'ちゃんちゃんホイル焼き',   nameVi:'Lườn Cá Hồi Nướng Miso Bơ', unit:'份', warnAt:2, active:true},
-  {id:'jingisukan',    nameJa:'ジンギスカン炒め',         nameVi:'Thịt Cừu Xào Gengis Khan',  unit:'份', warnAt:2, active:true},
-  {id:'hotate_onigiri',nameJa:'ホタテ焼きおにぎり',       nameVi:'Cơm nắm sò điệp',           unit:'份', warnAt:2, active:true},
-  {id:'katsuo_onigiri',nameJa:'かつお昆布おにぎり',       nameVi:'Cơm Nắm Cá Ngừ Bào',        unit:'份', warnAt:2, active:true},
-  {id:'soup_curry',    nameJa:'スープカレー',             nameVi:'Soup Curry Đùi Gà',          unit:'份', warnAt:2, active:true},
-  {id:'buta_don',      nameJa:'帯広名物！豚丼',           nameVi:'Cơm Ba Chỉ Heo Áp Cháo',    unit:'份', warnAt:2, active:true},
-  {id:'esukaroppi',    nameJa:'根室！エスカロップ',        nameVi:'Cơm Bơ Tỏi Heo Chiên Xù',   unit:'份', warnAt:2, active:true},
+  {id:'ramen_salad',   nameJa:'ラーメンサラダ',         nameRo:'Ramen Sarada',         nameVi:'Salad mì ramen',             unit:'袋', warnAt:2, active:true},
+  {id:'asupara',       nameJa:'アスパラバター',           nameRo:'Asupara Bata',         nameVi:'Măng tây xào bơ',            unit:'份', warnAt:2, active:true},
+  {id:'corn',          nameJa:'コーンバター',             nameRo:'Kon Bata',             nameVi:'Bắp Ngọt Xào Bơ',           unit:'份', warnAt:2, active:true},
+  {id:'tako_zangi',    nameJa:'たこザンギ',               nameRo:'Tako Zangi',           nameVi:'Bạch tuộc chiên',            unit:'份', warnAt:2, active:true},
+  {id:'tori_zangi',    nameJa:'若どりザンギ',             nameRo:'Wakadori Zangi',       nameVi:'Gà Chiên Zangi',             unit:'份', warnAt:2, active:true},
+  {id:'horumon',       nameJa:'塩ホルモン',               nameRo:'Shio Horumon',         nameVi:'Lòng heo nướng muối',        unit:'份', warnAt:2, active:true},
+  {id:'jaga_bata',     nameJa:'塩辛じゃがバター',         nameRo:'Shiokara Jaga Bata',   nameVi:'Khoai Tây Bơ Mắm Mực',      unit:'個', warnAt:3, active:true},
+  {id:'salmon',        nameJa:'ちゃんちゃんホイル焼き',   nameRo:'Chanchan Hoiru Yaki',  nameVi:'Lườn Cá Hồi Nướng Miso Bơ', unit:'份', warnAt:2, active:true},
+  {id:'jingisukan',    nameJa:'ジンギスカン炒め',         nameRo:'Jingisukan Itame',     nameVi:'Thịt Cừu Xào Gengis Khan',  unit:'份', warnAt:2, active:true},
+  {id:'hotate_onigiri',nameJa:'ホタテ焼きおにぎり',       nameRo:'Hotate Yaki Onigiri',  nameVi:'Cơm nắm sò điệp',           unit:'份', warnAt:2, active:true},
+  {id:'katsuo_onigiri',nameJa:'かつお昆布おにぎり',       nameRo:'Katsuo Kombu Onigiri', nameVi:'Cơm Nắm Cá Ngừ Bào',        unit:'份', warnAt:2, active:true},
+  {id:'soup_curry',    nameJa:'スープカレー',             nameRo:'Supu Kare',            nameVi:'Soup Curry Đùi Gà',          unit:'份', warnAt:2, active:true},
+  {id:'buta_don',      nameJa:'帯広名物！豚丼',           nameRo:'Obihiro Buta Don',     nameVi:'Cơm Ba Chỉ Heo Áp Cháo',    unit:'份', warnAt:2, active:true},
+  {id:'esukaroppi',    nameJa:'根室！エスカロップ',        nameRo:'Nemuro Esukaroppu',    nameVi:'Cơm Bơ Tỏi Heo Chiên Xù',   unit:'份', warnAt:2, active:true},
   // 調味料・食材
-  {id:'shoyu',         nameJa:'醤油',                    nameVi:'Nước tương',                 unit:'本', warnAt:1, active:true},
-  {id:'soba_tsuyu',    nameJa:'蕎麦つゆ',                nameVi:'Soba tsuyu',                 unit:'本', warnAt:1, active:true},
-  {id:'mayo',          nameJa:'マヨネーズ',               nameVi:'Mayonaise',                  unit:'袋', warnAt:1, active:true},
-  {id:'shiro_negi',    nameJa:'白ねぎ',                  nameVi:'Baro (hành tây)',             unit:'袋', warnAt:1, active:true},
-  {id:'ao_negi',       nameJa:'青ネギ',                  nameVi:'Hành lá',                    unit:'袋', warnAt:1, active:true},
-  {id:'kyabetsu',      nameJa:'千切りキャベツ',           nameVi:'Bắp cải sợi',               unit:'袋', warnAt:1, active:true},
-  {id:'otoshi',        nameJa:'お通し',                  nameVi:'Otoshi',                     unit:'袋', warnAt:2, active:true},
-  {id:'kushi',         nameJa:'串',                      nameVi:'Que xiên',                   unit:'袋', warnAt:1, active:true},
-  {id:'gohan',         nameJa:'ご飯',                    nameVi:'Cơm trắng',                  unit:'份', warnAt:3, active:true},
-  {id:'oden_soup',     nameJa:'おでんスープ',             nameVi:'Soup oden',                  unit:'袋', warnAt:1, active:true},
+  {id:'shoyu',         nameJa:'醤油',                    nameRo:'Shoyu',                nameVi:'Nước tương',                 unit:'本', warnAt:1, active:true},
+  {id:'soba_tsuyu',    nameJa:'蕎麦つゆ',                nameRo:'Soba Tsuyu',           nameVi:'Soba tsuyu',                 unit:'本', warnAt:1, active:true},
+  {id:'mayo',          nameJa:'マヨネーズ',               nameRo:'Mayonezu',             nameVi:'Mayonaise',                  unit:'袋', warnAt:1, active:true},
+  {id:'shiro_negi',    nameJa:'白ねぎ',                  nameRo:'Shiro Negi',           nameVi:'Baro (hành tây)',             unit:'袋', warnAt:1, active:true},
+  {id:'ao_negi',       nameJa:'青ネギ',                  nameRo:'Ao Negi',              nameVi:'Hành lá',                    unit:'袋', warnAt:1, active:true},
+  {id:'kyabetsu',      nameJa:'千切りキャベツ',           nameRo:'Sengiri Kyabetsu',     nameVi:'Bắp cải sợi',               unit:'袋', warnAt:1, active:true},
+  {id:'otoshi',        nameJa:'お通し',                  nameRo:'Otoshi',               nameVi:'Otoshi',                     unit:'袋', warnAt:2, active:true},
+  {id:'kushi',         nameJa:'串',                      nameRo:'Kushi',                nameVi:'Que xiên',                   unit:'袋', warnAt:1, active:true},
+  {id:'gohan',         nameJa:'ご飯',                    nameRo:'Gohan',                nameVi:'Cơm trắng',                  unit:'份', warnAt:3, active:true},
+  {id:'oden_soup',     nameJa:'おでんスープ',             nameRo:'Oden Supu',            nameVi:'Soup oden',                  unit:'袋', warnAt:1, active:true},
   // おでん
-  {id:'daikon',        nameJa:'大根',                    nameVi:'Daikon (củ cải)',             unit:'份', warnAt:3, active:true},
-  {id:'tamago',        nameJa:'たまご',                  nameVi:'Trứng',                      unit:'份', warnAt:3, active:true},
-  {id:'konyaku',       nameJa:'こんにゃく',               nameVi:'Konyaku',                    unit:'份', warnAt:2, active:true},
-  {id:'atsuage',       nameJa:'厚揚げ豆腐',              nameVi:'Đậu hũ chiên (atsuage)',     unit:'份', warnAt:2, active:true},
-  {id:'satsuma_age',   nameJa:'さつま揚げ',              nameVi:'Chả cá chiên',               unit:'份', warnAt:2, active:true},
-  {id:'tsukune',       nameJa:'つくね',                  nameVi:'Tsukune',                    unit:'份', warnAt:2, active:true},
-  {id:'gyutan',        nameJa:'牛タン',                  nameVi:'Lưỡi bò',                    unit:'份', warnAt:2, active:true},
-  {id:'ebi_shinjo',    nameJa:'えび真丈',                nameVi:'Chả tôm',                    unit:'份', warnAt:2, active:true},
-  {id:'tsubu',         nameJa:'つぶ貝',                  nameVi:'Ốc tsubu',                   unit:'份', warnAt:2, active:true},
-  {id:'rorukyabetsu',  nameJa:'ロールキャベツ',           nameVi:'Bắp cải cuộn',              unit:'份', warnAt:2, active:true},
+  {id:'daikon',        nameJa:'大根',                    nameRo:'Daikon',               nameVi:'Daikon (củ cải)',             unit:'份', warnAt:3, active:true},
+  {id:'tamago',        nameJa:'たまご',                  nameRo:'Tamago',               nameVi:'Trứng',                      unit:'份', warnAt:3, active:true},
+  {id:'konyaku',       nameJa:'こんにゃく',               nameRo:'Konyaku',              nameVi:'Konyaku',                    unit:'份', warnAt:2, active:true},
+  {id:'atsuage',       nameJa:'厚揚げ豆腐',              nameRo:'Atsuage Tofu',         nameVi:'Đậu hũ chiên (atsuage)',     unit:'份', warnAt:2, active:true},
+  {id:'satsuma_age',   nameJa:'さつま揚げ',              nameRo:'Satsuma Age',          nameVi:'Chả cá chiên',               unit:'份', warnAt:2, active:true},
+  {id:'tsukune',       nameJa:'つくね',                  nameRo:'Tsukune',              nameVi:'Tsukune',                    unit:'份', warnAt:2, active:true},
+  {id:'gyutan',        nameJa:'牛タン',                  nameRo:'Gyu Tan',              nameVi:'Lưỡi bò',                    unit:'份', warnAt:2, active:true},
+  {id:'ebi_shinjo',    nameJa:'えび真丈',                nameRo:'Ebi Shinjo',           nameVi:'Chả tôm',                    unit:'份', warnAt:2, active:true},
+  {id:'tsubu',         nameJa:'つぶ貝',                  nameRo:'Tsubu Gai',            nameVi:'Ốc tsubu',                   unit:'份', warnAt:2, active:true},
+  {id:'rorukyabetsu',  nameJa:'ロールキャベツ',           nameRo:'Roll Kyabetsu',        nameVi:'Bắp cải cuộn',              unit:'份', warnAt:2, active:true},
 ];
 
 // ─── INIT ─────────────────────────────────────────────────────────────
 function boot(){
   if(!loadProds().length){ saveProds(DEFAULT_PRODUCTS.map(p=>({...p}))); }
+  // Migration: add nameRo to existing products that don't have it
+  const prods = loadProds();
+  let changed = false;
+  prods.forEach(p => {
+    if(!p.nameRo) {
+      const def = DEFAULT_PRODUCTS.find(d => d.id === p.id);
+      if(def) { p.nameRo = def.nameRo; changed = true; }
+    }
+  });
+  if(changed) saveProds(prods);
   if(!loadEvts().some(e=>e.type==='init')) showInit();
 }
 
