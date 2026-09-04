@@ -191,7 +191,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
     <div class="ocr-sub" id="sale-paste-sub-txt"></div>
     <div id="sales-paste-body"></div>
     <div class="mt8">
-      <button class="btn btn-ghost" onclick="closeSalesPaste()">キャンセル / Hủy</button>
+      <button class="btn btn-ghost" onclick="closeSalesPaste()">${t('cancel')}</button>
     </div>
   </div>
 </div>
@@ -210,7 +210,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
       </button>
     </div>
     <div class="mt8">
-      <button class="btn btn-ghost" onclick="closeOcr()">キャンセル / Hủy</button>
+      <button class="btn btn-ghost" onclick="closeOcr()">${t('cancel')}</button>
     </div>
   </div>
 </div>
@@ -221,7 +221,7 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
     <div class="conf-title" id="conf-title"></div>
     <div class="conf-body"  id="conf-body"></div>
     <div class="conf-acts">
-      <button class="btn btn-ghost" onclick="closeConf()">キャンセル</button>
+      <button class="btn btn-ghost" onclick="closeConf()">${t('cancel')}</button>
       <button class="btn btn-primary" id="conf-ok">確認</button>
     </div>
   </div>
@@ -853,7 +853,6 @@ function parseSalesText(){
     .replace(/\s+/g,' ').trim();
 
   for(const line of lines){
-    // 末尾の数字を数量として取得（小数点対応：13.00→13）
     const m=line.match(/^(.*?)\s+([\d.]+)\s*$/);
     if(!m) continue;
     const namePart=m[1].trim();
@@ -861,25 +860,29 @@ function parseSalesText(){
     if(!qty) continue;
 
     const normName=normalize(namePart);
+    const nameWords=new Set(normName.split(' ').filter(w=>w.length>=3));
     let best=null, bestScore=0;
 
     for(const p of prods){
-      const targets=[p.nameVi, p.nameJa].map(normalize);
-      for(const t of targets){
+      const targets=[normalize(p.nameVi), normalize(p.nameJa)];
+      for(const tgt of targets){
+        const tgtWords=new Set(tgt.split(' ').filter(w=>w.length>=3));
         let score=0;
-        if(t===normName) score=100;
-        else if(t.includes(normName)||normName.includes(t)) score=50;
-        else {
-          const wa=new Set(normName.split(' '));
-          const wb=new Set(t.split(' '));
-          const overlap=[...wa].filter(w=>w.length>2&&wb.has(w)).length;
-          if(overlap>0) score=overlap*20;
+        if(tgt===normName){
+          score=100;
+        } else if(tgt.startsWith(normName)||normName.startsWith(tgt)){
+          score=80;
+        } else {
+          const overlap=[...nameWords].filter(w=>tgtWords.has(w)).length;
+          if(overlap>0 && nameWords.size>0){
+            score=Math.round((overlap/nameWords.size)*70);
+          }
         }
         if(score>bestScore){bestScore=score;best=p;}
       }
     }
 
-    if(best&&bestScore>=20){
+    if(best&&bestScore>=60){
       matched.push({product:best, qty, nameOnReceipt:namePart});
     } else {
       unmatched.push({nameOnReceipt:namePart, qty});
@@ -1061,47 +1064,52 @@ function parsePastedText(){
   const matched=[];
   const unmatched=[];
 
+  const normalize=s=>s.toLowerCase()
+    .replace(/[áàảãạăắằẳẵặâấầẩẫậ]/g,'a')
+    .replace(/[éèẻẽẹêếềểễệ]/g,'e')
+    .replace(/[íìỉĩị]/g,'i')
+    .replace(/[óòỏõọôốồổỗộơớờởỡợ]/g,'o')
+    .replace(/[úùủũụưứừửữự]/g,'u')
+    .replace(/[ýỳỷỹỵ]/g,'y')
+    .replace(/đ/g,'d')
+    .replace(/[^\w\s]/g,'')
+    .replace(/\s+/g,' ').trim();
+
   for(const line of lines){
-    // Extract trailing number (quantity)
     const m=line.match(/^(.*?)\s+(\d+)\s*$/);
     if(!m) continue;
     const namePart=m[1].trim();
     const qty=parseInt(m[2]);
-
-    // Try to match against product master
-    // Score: exact match > contains > fuzzy (normalized)
-    const normalize=s=>s.toLowerCase()
-      .replace(/[áàảãạăắằẳẵặâấầẩẫậ]/g,'a')
-      .replace(/[éèẻẽẹêếềểễệ]/g,'e')
-      .replace(/[íìỉĩị]/g,'i')
-      .replace(/[óòỏõọôốồổỗộơớờởỡợ]/g,'o')
-      .replace(/[úùủũụưứừửữự]/g,'u')
-      .replace(/[ýỳỷỹỵ]/g,'y')
-      .replace(/đ/g,'d')
-      .replace(/[^\w\s]/g,'')
-      .replace(/\s+/g,' ').trim();
-
     const normName=normalize(namePart);
+    const nameWords=new Set(normName.split(' ').filter(w=>w.length>=3));
+
     let best=null, bestScore=0;
 
     for(const p of prods){
-      const targets=[p.nameVi, p.nameJa].map(normalize);
-      for(const t of targets){
+      const targets=[normalize(p.nameVi), normalize(p.nameJa)];
+      for(const tgt of targets){
+        const tgtWords=new Set(tgt.split(' ').filter(w=>w.length>=3));
         let score=0;
-        if(t===normName) score=100;
-        else if(t.includes(normName)||normName.includes(t)) score=50;
-        else {
-          // word overlap
-          const wa=new Set(normName.split(' '));
-          const wb=new Set(t.split(' '));
-          const overlap=[...wa].filter(w=>w.length>2&&wb.has(w)).length;
-          if(overlap>0) score=overlap*20;
+
+        if(tgt===normName){
+          score=100; // 完全一致
+        } else if(tgt.startsWith(normName)||normName.startsWith(tgt)){
+          score=80;  // 前方一致
+        } else {
+          // 単語の重複を数える（重複数/入力側の単語数 で割合を出す）
+          const overlap=[...nameWords].filter(w=>tgtWords.has(w)).length;
+          if(overlap>0 && nameWords.size>0){
+            const ratio=overlap/nameWords.size;
+            score=Math.round(ratio*70); // 全単語一致なら70点
+          }
         }
+
         if(score>bestScore){bestScore=score;best=p;}
       }
     }
 
-    if(best&&bestScore>=20){
+    // 閾値を60以上に上げる（あいまいマッチを防ぐ）
+    if(best&&bestScore>=60){
       matched.push({product:best, qty, nameOnReceipt:namePart});
     } else {
       unmatched.push({nameOnReceipt:namePart, qty});
@@ -1109,7 +1117,7 @@ function parsePastedText(){
   }
 
   if(!matched.length&&!unmatched.length){
-    toast('商品が見つかりませんでした。フォーマットを確認してください。');
+    toast(t('noMatch'));
     return;
   }
 
