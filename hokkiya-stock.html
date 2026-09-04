@@ -132,10 +132,11 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
 </head>
 <body>
 <header class="app-header">
-  <div>
+  <div style="flex:1">
     <h1>🧊 HOKKIYA</h1>
-    <div class="sub">在庫管理 / Quản lý tồn kho</div>
+    <div class="sub" id="hdr-sub">在庫管理 / Quản lý tồn kho</div>
   </div>
+  <button id="lang-btn" onclick="toggleLang()" style="background:rgba(255,255,255,.15);border:1.5px solid rgba(255,255,255,.3);color:#fff;border-radius:20px;padding:6px 14px;font-size:13px;font-weight:700;cursor:pointer;flex-shrink:0">🇻🇳 VI</button>
 </header>
 
 <div id="screen-stock"    class="screen active"></div>
@@ -162,33 +163,32 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
 <div id="ss-view">
   <div class="ss-hdr">
     <div class="ss-logo">HOKKIYA</div>
-    <div class="ss-sub">BÁO SỐ LƯỢNG CÒN LẠI</div>
+    <div class="ss-sub" id="ss-title">BÁO SỐ LƯỢNG CÒN LẠI</div>
     <div class="ss-date" id="ss-date"></div>
     <div id="ss-order-msg" style="margin-top:10px;font-size:15px;font-weight:700;color:#333"></div>
   </div>
   <table class="ss-table" id="ss-table"></table>
   <div style="height:80px"></div>
-  <button class="ss-close" onclick="document.getElementById('ss-view').classList.remove('open')">✕ Đóng / 閉じる</button>
+  <button id="ss-close-btn" class="ss-close" onclick="document.getElementById('ss-view').classList.remove('open')">✕ Đóng</button>
 </div>
 
 <!-- Init -->
 <div id="init-ov">
   <div class="init-hdr">
-    <h2>初回在庫登録</h2>
-    <p>Nhập tồn kho ban đầu</p>
+    <h2 id="init-title-txt"></h2>
   </div>
   <div style="padding:16px">
-    <p style="font-size:13px;color:var(--text-sub);margin-bottom:16px">冷凍庫の実在庫を数えて入力してください。<br><span style="font-size:12px">Hãy đếm và nhập số lượng thực tế trong kho lạnh.</span></p>
+    <p style="font-size:13px;color:var(--text-sub);margin-bottom:16px" id="init-hint-txt"></p>
     <div id="init-list"></div>
-    <div class="mt16"><button class="btn btn-primary" onclick="completeInit()">登録完了 / Hoàn tất đăng ký</button></div>
+    <div class="mt16"><button class="btn btn-primary" id="init-done-btn" onclick="completeInit()"></button></div>
   </div>
 </div>
 
 <!-- Sales paste overlay -->
 <div id="sales-paste-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;align-items:flex-end;justify-content:center" class="sales-ov-wrap">
   <div class="ocr-sheet">
-    <div class="ocr-title">📋 販売データを貼り付ける / Dán dữ liệu bán hàng</div>
-    <div class="ocr-sub">会計ソフトのデータをコピーして貼り付けてください。<br>Sao chép dữ liệu từ phần mềm tính tiền và dán vào đây.</div>
+    <div class="ocr-title" id="sale-paste-title-txt"></div>
+    <div class="ocr-sub" id="sale-paste-sub-txt"></div>
     <div id="sales-paste-body"></div>
     <div class="mt8">
       <button class="btn btn-ghost" onclick="closeSalesPaste()">キャンセル / Hủy</button>
@@ -199,12 +199,12 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
 <!-- Text paste overlay -->
 <div id="ocr-ov">
   <div class="ocr-sheet">
-    <div class="ocr-title">📋 伝票テキストを貼り付ける / Dán nội dung phiếu</div>
-    <div class="ocr-sub">TOSHIROから届いたテキストをそのまま貼り付けてください。<br>Dán text phiếu giao hàng từ TOSHIRO vào đây.</div>
+    <div class="ocr-title" id="ocr-title-txt"></div>
+    <div class="ocr-sub" id="ocr-sub-txt"></div>
     <div id="ocr-body">
       <textarea id="paste-input" 
         style="width:100%;height:160px;padding:12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:15px;background:var(--bg);color:var(--text);resize:none;outline:none;font-family:inherit;margin-bottom:12px"
-        placeholder="例 / Ví dụ:&#10;Cơm nắm sò điệp 10&#10;Hành baro 1&#10;Củ cải trắng 25&#10;Đậu hũ chiên 12"></textarea>
+        placeholder="${t('delPastePH')}"></textarea>
       <button class="btn btn-primary" onclick="parsePastedText()">
         読み取る / Đọc nội dung
       </button>
@@ -230,6 +230,263 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
 <div id="toast"></div>
 
 <script>
+// ─── STORAGE ─────────────────────────────────────────────────────────
+const LS={
+  get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},
+  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
+};
+const loadProds=()=>LS.get('hk_products')||[];
+const saveProds=p=>LS.set('hk_products',p);
+const loadEvts =()=>LS.get('hk_events')||[];
+const saveEvts =e=>LS.set('hk_events',e);
+
+function addEvt(type,items,note=''){
+  const e=loadEvts();
+  e.push({id:Date.now().toString(),type,at:new Date().toISOString(),items,note});
+  saveEvts(e);
+}
+
+function calcStock(pid){
+  let qty=0;
+  for(const ev of loadEvts()){
+    const it=ev.items.find(i=>i.productId===pid);
+    if(!it) continue;
+    if(ev.type==='init'||ev.type==='adjust') qty=it.qty;
+    if(ev.type==='delivery') qty+=it.qty;
+    if(ev.type==='sale')     qty-=it.qty;
+  }
+  return Math.max(0,qty);
+}
+
+function stocksMap(){
+  const m={};
+  for(const p of loadProds()) m[p.id]=calcStock(p.id);
+  return m;
+}
+
+// ─── LANGUAGE ────────────────────────────────────────────────────────
+let lang = LS.get('hk_lang') || 'vi';
+
+const T = {
+  vi: {
+    // header
+    hdrSub: 'Quản lý tồn kho',
+    langBtn: '🇯🇵 JA',
+    // nav
+    navStock: 'Tồn kho', navStockSub: '在庫・報告',
+    navDel: 'Nhận hàng', navDelSub: '納品',
+    navSale: 'Bán hàng', navSaleSub: '販売',
+    navAdmin: 'Quản lý', navAdminSub: '管理',
+    // stock screen
+    searchPlaceholder: 'Tìm kiếm...',
+    stockHint: 'Nhấn vào sản phẩm để chọn báo số lượng.',
+    btnSS: '📋 Tạo danh sách báo số',
+    btnUpdate: '✓ Cập nhật tồn kho',
+    actualQty: 'Số lượng thực tế còn lại：',
+    // screenshot
+    ssTitle: 'BÁO SỐ LƯỢNG CÒN LẠI',
+    ssMsg: 'Nhờ anh giao hàng giúp em ạ 🙏',
+    ssClose: '✕ Đóng',
+    // delivery
+    delHint: 'Kiểm tra hàng nhận được và nhập số lượng.',
+    delFrom: 'Từ báo cáo lần trước',
+    delAddMore: '＋ Thêm sản phẩm khác',
+    btnDelDone: '✓ Xác nhận đã nhận & cộng vào tồn kho',
+    delPasteBtn: '📋 Dán nội dung phiếu giao hàng',
+    delPasteTitle: '📋 Dán nội dung phiếu giao hàng',
+    delPasteSub: 'Dán text phiếu giao hàng từ TOSHIRO vào đây.',
+    delPastePH: 'Ví dụ:\nCơm nắm sò điệp 10\nHành baro 1\nCủ cải trắng 25',
+    delPasteRead: 'Đọc nội dung',
+    // sales
+    saleHint: 'Nhập số lượng đã bán hôm nay.',
+    saleManual: 'Hoặc nhập số lượng thủ công.',
+    btnSaleDone: '✓ Xác nhận bán hàng & trừ tồn kho',
+    salePasteBtn: '📋 Dán dữ liệu bán hàng',
+    salePasteTitle: '📋 Dán dữ liệu bán hàng',
+    salePasteSub: 'Sao chép dữ liệu từ phần mềm tính tiền và dán vào đây.',
+    salePastePH: 'Ví dụ:\nTamago 13\nDaikon 12\nTsukune 4',
+    // common
+    readBtn: 'Đọc nội dung',
+    resultTitle: 'Kết quả đọc',
+    resultSub: 'Đối chiếu với hàng thực tế.',
+    unmatchedTitle: '⚠️ Chưa có trong danh sách',
+    pasteAgain: '← Dán lại',
+    applyDel: '✓ Xác nhận & chuyển sang màn hình nhận hàng',
+    applySale: '✓ Xác nhận & chuyển sang màn hình bán hàng',
+    cancel: 'Hủy',
+    stockLabel: 'Tồn kho',
+    warnLabel: 'Cảnh báo',
+    // admin
+    adminAddTitle: '➕ Thêm sản phẩm',
+    adminListTitle: '📋 Danh sách sản phẩm',
+    adminHistTitle: '📜 Lịch sử',
+    adminBackupTitle: '💾 Sao lưu dữ liệu',
+    adminBackupHint: 'Hãy lưu định kỳ để phòng khi mất dữ liệu.',
+    btnSave: '💾 Lưu dữ liệu',
+    btnLoad: '📂 Khôi phục dữ liệu',
+    btnReset: '⚠️ Xóa toàn bộ dữ liệu',
+    labelJa: 'Tên tiếng Nhật', labelVi: 'Tên tiếng Việt',
+    labelUnit: 'Đơn vị', labelWarn: 'Mức cảnh báo',
+    btnAdd: 'Thêm',
+    active: 'Đang dùng', inactive: 'Ngừng dùng',
+    btnStop: 'Dừng', btnRevive: 'Kích hoạt',
+    noHistory: 'Chưa có lịch sử',
+    typeLabel: {init:'Nhập ban đầu',adjust:'Sửa tồn kho',delivery:'Nhận hàng',sale:'Bán hàng',product_add:'Thêm sản phẩm'},
+    // init
+    initTitle: 'Nhập tồn kho ban đầu',
+    initHint: 'Hãy đếm và nhập số lượng thực tế trong kho lạnh.',
+    btnInitDone: 'Hoàn tất đăng ký',
+    // confirm
+    confirmUpdate: 'Cập nhật tồn kho?',
+    confirmUpdateBody: (n) => `Cập nhật tồn kho ${n} sản phẩm?`,
+    confirmDel: 'Xác nhận nhận hàng',
+    confirmDelBody: (n) => `Cộng ${n} sản phẩm vào tồn kho?`,
+    confirmSale: 'Xác nhận bán hàng?',
+    confirmSaleBody: (n) => `Trừ tồn kho ${n} sản phẩm?`,
+    confirmReset: '⚠️ Xóa dữ liệu',
+    confirmResetBody: 'Xóa toàn bộ dữ liệu. Không thể hoàn tác.',
+    confirmOk: 'Xác nhận',
+    // toast
+    toastUpdated: 'Đã cập nhật tồn kho ✓',
+    toastDelivered: 'Đã cộng vào tồn kho ✓',
+    toastSold: 'Đã xác nhận bán hàng ✓',
+    toastSaved: '💾 Đã lưu ✓',
+    toastRestored: '📂 Đã khôi phục dữ liệu ✓',
+    toastAdded: (name) => `Đã thêm ${name} ✓`,
+    toastDelPaste: 'Đã phản ánh phiếu giao hàng ✓',
+    toastSalePaste: 'Đã phản ánh dữ liệu bán hàng ✓',
+    selectItem: 'Vui lòng chọn sản phẩm',
+    enterQty: 'Vui lòng nhập số lượng',
+    enterName: 'Vui lòng nhập tên',
+    enterText: 'Vui lòng nhập văn bản',
+    noMatch: 'Không tìm thấy sản phẩm phù hợp',
+    fileError: 'File không hợp lệ',
+  },
+  ja: {
+    hdrSub: '在庫管理',
+    langBtn: '🇻🇳 VI',
+    navStock: '在庫', navStockSub: '報告',
+    navDel: '納品', navDelSub: '',
+    navSale: '販売', navSaleSub: '',
+    navAdmin: '管理', navAdminSub: '',
+    searchPlaceholder: '検索...',
+    stockHint: '商品をタップして残数報告に選択。',
+    btnSS: '📋 スクリーンショット生成',
+    btnUpdate: '✓ 在庫を更新',
+    actualQty: '実際の残数：',
+    ssTitle: '残数報告',
+    ssMsg: 'ご注文よろしくお願いします 🙏',
+    ssClose: '✕ 閉じる',
+    delHint: '届いた商品をチェックして数量を入力してください。',
+    delFrom: '前回の残数報告より',
+    delAddMore: '＋ 他の商品を追加',
+    btnDelDone: '✓ 受取完了・在庫へ加算',
+    delPasteBtn: '📋 伝票テキストを貼り付ける',
+    delPasteTitle: '📋 伝票テキストを貼り付ける',
+    delPasteSub: 'TOSHIROから届いたテキストをそのまま貼り付けてください。',
+    delPastePH: '例:\nCơm nắm sò điệp 10\nHành baro 1\nCủ cải trắng 25',
+    delPasteRead: '読み取る',
+    saleHint: '今日売れた数量を入力してください。',
+    saleManual: 'または手動で数量を入力。',
+    btnSaleDone: '✓ 販売を確定・在庫から差引',
+    salePasteBtn: '📋 販売データを貼り付ける',
+    salePasteTitle: '📋 販売データを貼り付ける',
+    salePasteSub: '会計ソフトのデータをコピーして貼り付けてください。',
+    salePastePH: '例:\nTamago 13\nDaikon 12\nTsukune 4',
+    readBtn: '読み取る',
+    resultTitle: '読み取り結果',
+    resultSub: '現物と照合して確認してください。',
+    unmatchedTitle: '⚠️ マスタに未登録',
+    pasteAgain: '← 貼り直す',
+    applyDel: '✓ この内容で納品画面へ',
+    applySale: '✓ この内容で販売画面へ',
+    cancel: 'キャンセル',
+    stockLabel: '在庫',
+    warnLabel: '警告',
+    adminAddTitle: '➕ 商品を追加',
+    adminListTitle: '📋 商品一覧',
+    adminHistTitle: '📜 履歴',
+    adminBackupTitle: '💾 バックアップ',
+    adminBackupHint: 'データが消えた時に備えて定期的に保存してください。',
+    btnSave: '💾 データを保存する',
+    btnLoad: '📂 データを読み込む',
+    btnReset: '⚠️ データをリセット',
+    labelJa: '日本語名', labelVi: 'ベトナム語名',
+    labelUnit: '単位', labelWarn: '警告ライン',
+    btnAdd: '追加',
+    active: '使用中', inactive: '取扱終了',
+    btnStop: '停止', btnRevive: '復活',
+    noHistory: '履歴なし',
+    typeLabel: {init:'初回登録',adjust:'在庫修正',delivery:'納品',sale:'販売',product_add:'商品追加'},
+    initTitle: '初回在庫登録',
+    initHint: '冷凍庫の実在庫を数えて入力してください。',
+    btnInitDone: '登録完了',
+    confirmUpdate: '在庫を更新しますか？',
+    confirmUpdateBody: (n) => `${n}品の残数を在庫に反映します。`,
+    confirmDel: '受取完了',
+    confirmDelBody: (n) => `${n}品を在庫へ加算します。`,
+    confirmSale: '販売を確定しますか？',
+    confirmSaleBody: (n) => `${n}品の販売数を在庫から差し引きます。`,
+    confirmReset: '⚠️ データを削除',
+    confirmResetBody: 'すべての在庫・履歴データを削除します。この操作は元に戻せません。',
+    confirmOk: '確認',
+    toastUpdated: '在庫を更新しました ✓',
+    toastDelivered: '在庫へ加算しました ✓',
+    toastSold: '販売を確定しました ✓',
+    toastSaved: '💾 保存しました ✓',
+    toastRestored: '📂 データを復元しました ✓',
+    toastAdded: (name) => `${name} を追加しました ✓`,
+    toastDelPaste: '伝票を反映しました ✓',
+    toastSalePaste: '販売データを反映しました ✓',
+    selectItem: '商品を選択してください',
+    enterQty: '数量を入力してください',
+    enterName: '名前を入力してください',
+    enterText: 'テキストを入力してください',
+    noMatch: '商品が見つかりませんでした',
+    fileError: 'ファイルが正しくありません',
+  }
+};
+
+function t(key, ...args) {
+  const val = T[lang][key];
+  return typeof val === 'function' ? val(...args) : (val ?? key);
+}
+
+function pname(p) {
+  return lang === 'vi' ? p.nameVi : p.nameJa;
+}
+function pnamesub(p) {
+  return lang === 'vi' ? p.nameJa : p.nameVi;
+}
+
+function toggleLang() {
+  lang = lang === 'vi' ? 'ja' : 'vi';
+  LS.set('hk_lang', lang);
+  applyLang();
+  // Re-render current screen
+  const active = document.querySelector('.nav-btn.active');
+  if (active) render(active.dataset.s);
+}
+
+function applyLang() {
+  document.getElementById('hdr-sub').textContent = t('hdrSub');
+  document.getElementById('lang-btn').textContent = t('langBtn');
+  // Nav labels
+  const navData = [
+    ['stock',    'navStock',  'navStockSub'],
+    ['delivery', 'navDel',    'navDelSub'],
+    ['sales',    'navSale',   'navSaleSub'],
+    ['admin',    'navAdmin',  'navAdminSub'],
+  ];
+  navData.forEach(([s, main, sub]) => {
+    const btn = document.querySelector(`.nav-btn[data-s="${s}"]`);
+    if (!btn) return;
+    const spans = btn.querySelectorAll('span:not(.icon)');
+    if (spans[0]) spans[0].textContent = t(main);
+    if (spans[1]) spans[1].textContent = t(sub);
+  });
+}
+
 // ─── PRODUCT MASTER ───────────────────────────────────────────────────
 const DEFAULT_PRODUCTS = [
   // 料理
@@ -271,40 +528,6 @@ const DEFAULT_PRODUCTS = [
   {id:'rorukyabetsu',  nameJa:'ロールキャベツ',           nameVi:'Bắp cải cuộn',              unit:'份', warnAt:2, active:true},
 ];
 
-// ─── STORAGE ─────────────────────────────────────────────────────────
-const LS={
-  get:k=>{try{return JSON.parse(localStorage.getItem(k))}catch{return null}},
-  set:(k,v)=>localStorage.setItem(k,JSON.stringify(v))
-};
-const loadProds=()=>LS.get('hk_products')||[];
-const saveProds=p=>LS.set('hk_products',p);
-const loadEvts =()=>LS.get('hk_events')||[];
-const saveEvts =e=>LS.set('hk_events',e);
-
-function addEvt(type,items,note=''){
-  const e=loadEvts();
-  e.push({id:Date.now().toString(),type,at:new Date().toISOString(),items,note});
-  saveEvts(e);
-}
-
-function calcStock(pid){
-  let qty=0;
-  for(const ev of loadEvts()){
-    const it=ev.items.find(i=>i.productId===pid);
-    if(!it) continue;
-    if(ev.type==='init'||ev.type==='adjust') qty=it.qty;
-    if(ev.type==='delivery') qty+=it.qty;
-    if(ev.type==='sale')     qty-=it.qty;
-  }
-  return Math.max(0,qty);
-}
-
-function stocksMap(){
-  const m={};
-  for(const p of loadProds()) m[p.id]=calcStock(p.id);
-  return m;
-}
-
 // ─── INIT ─────────────────────────────────────────────────────────────
 function boot(){
   if(!loadProds().length){ saveProds(DEFAULT_PRODUCTS.map(p=>({...p}))); }
@@ -312,6 +535,9 @@ function boot(){
 }
 
 function showInit(){
+  document.getElementById('init-title-txt').textContent=t('initTitle');
+  document.getElementById('init-hint-txt').textContent=t('initHint');
+  document.getElementById('init-done-btn').textContent=t('btnInitDone');
   const prods=loadProds().filter(p=>p.active);
   document.getElementById('init-list').innerHTML=prods.map(p=>`
     <div class="s-item" style="margin-bottom:10px">
@@ -365,24 +591,15 @@ function renderStock(){
   document.getElementById('screen-stock').innerHTML=`
     <div class="srch-wrap" style="margin-bottom:8px">
       <span class="srch-icon">🔍</span>
-      <input class="srch-box" type="text" placeholder="Tìm kiếm / 検索..." oninput="filterStock(this.value)" style="margin-bottom:0">
+      <input class="srch-box" type="text" placeholder="${t('searchPlaceholder')}" oninput="filterStock(this.value)" style="margin-bottom:0">
     </div>
-    <p style="font-size:11px;color:var(--text-sub);margin-bottom:10px">
-      Nhấn vào sản phẩm để chọn báo số lượng.<br>
-      <span style="font-size:10px">商品をタップして残数報告に選択。</span>
-    </p>
+    <p style="font-size:11px;color:var(--text-sub);margin-bottom:10px">${t('stockHint')}</p>
     <div class="stock-list" id="sl">
       ${sorted.map(p=>stockReportItemHTML(p, sm[p.id]||0)).join('')}
     </div>
     <div id="ss-btns" style="display:none;position:sticky;bottom:calc(var(--nav-h) + 8px);padding:10px 0;background:var(--bg)">
-      <button class="btn btn-accent" onclick="genSS()">
-        📋 スクリーンショット生成 / Tạo danh sách
-      </button>
-      <div class="mt8">
-        <button class="btn btn-primary" onclick="submitReport()">
-          ✓ 在庫を更新 / Cập nhật tồn kho
-        </button>
-      </div>
+      <button class="btn btn-accent" onclick="genSS()">${t('btnSS')}</button>
+      <div class="mt8"><button class="btn btn-primary" onclick="submitReport()">${t('btnUpdate')}</button></div>
     </div>`;
 }
 
@@ -395,13 +612,13 @@ function stockReportItemHTML(p, qty){
       <div style="display:flex;align-items:center;gap:12px;padding:14px 16px" onclick="togSR('${p.id}',${qty})">
         <div class="chk ${on?'on':''}" id="srcb-${p.id}">✓</div>
         <div class="names" style="flex:1">
-          <div class="name-vi">${p.nameVi}</div>
-          <div class="name-ja">${p.nameJa}</div>
+          <div class="name-vi" style="font-size:15px;font-weight:600">${pname(p)}</div>
+          <div class="name-ja" style="font-size:12px;color:var(--text-sub)">${pnamesub(p)}</div>
         </div>
         <div class="stock-qty" style="font-size:26px">${qty}</div>
       </div>
       <div id="srb-${p.id}" style="display:${on?'block':'none'};padding:0 16px 14px;border-top:1px solid var(--border)">
-        <p style="font-size:11px;color:var(--text-sub);margin:8px 0 6px">Số lượng thực tế / 実際の残数：</p>
+        <p style="font-size:11px;color:var(--text-sub);margin:8px 0 6px">${t('actualQty')}</p>
         <div class="stepper">
           <button class="step-btn" onclick="stepSR('${p.id}',-1)">−</button>
           <div class="step-val" id="srv-${p.id}">${rVals[p.id]}</div>
@@ -440,25 +657,24 @@ function filterStock(q){
 
 function genSS(){
   const ids=Object.keys(rChk).filter(id=>rChk[id]);
-  if(!ids.length){toast('商品を選択してください');return;}
+  if(!ids.length){toast(t('selectItem'));return;}
   const prods=loadProds();
   const now=new Date();
-
-  // Vietnamese day names
   const daysVi=['Chủ Nhật','Thứ Hai','Thứ Ba','Thứ Tư','Thứ Năm','Thứ Sáu','Thứ Bảy'];
-  const dayVi=daysVi[now.getDay()];
+  const daysJa=['日曜日','月曜日','火曜日','水曜日','木曜日','金曜日','土曜日'];
+  const dayStr = lang==='vi' ? daysVi[now.getDay()] : daysJa[now.getDay()];
   const dd=now.getDate().toString().padStart(2,'0');
   const mm=(now.getMonth()+1).toString().padStart(2,'0');
   const yyyy=now.getFullYear();
-
-  document.getElementById('ss-date').textContent=`${dayVi}, ${dd}/${mm}/${yyyy}`;
-  document.getElementById('ss-order-msg').textContent='Nhờ anh giao hàng giúp em ạ 🙏';
-
+  document.getElementById('ss-date').textContent=`${dayStr}, ${dd}/${mm}/${yyyy}`;
+  document.getElementById('ss-order-msg').textContent=t('ssMsg');
+  document.getElementById('ss-title').textContent=t('ssTitle');
+  document.getElementById('ss-close-btn').textContent=t('ssClose');
   document.getElementById('ss-table').innerHTML=ids.map(id=>{
     const p=prods.find(x=>x.id===id);
     if(!p) return '';
     return `<tr>
-      <td><div class="name-vi">${p.nameVi}</div><div class="name-ja" style="font-size:11px;color:#999">${p.nameJa}</div></td>
+      <td><div style="font-size:15px;font-weight:600">${pname(p)}</div><div style="font-size:11px;color:#999">${pnamesub(p)}</div></td>
       <td class="item-qty">${rVals[id]??0}</td>
     </tr>`;
   }).join('');
@@ -467,14 +683,11 @@ function genSS(){
 
 function submitReport(){
   const ids=Object.keys(rChk).filter(id=>rChk[id]);
-  if(!ids.length){toast('商品を選択してください');return;}
-  confirm2('在庫を更新しますか？',`${ids.length}品の残数を在庫に反映。\nCập nhật tồn kho ${ids.length} sản phẩm?`,()=>{
+  if(!ids.length){toast(t('selectItem'));return;}
+  confirm2(t('confirmUpdate'), t('confirmUpdateBody', ids.length), ()=>{
     addEvt('adjust',ids.map(id=>({productId:id,qty:rVals[id]||0})),'残数報告による修正');
-    ids.forEach(id=>{
-      delete rChk[id];
-      delete rVals[id];
-    });
-    toast('在庫を更新しました ✓');
+    ids.forEach(id=>{ delete rChk[id]; delete rVals[id]; });
+    toast(t('toastUpdated'));
     renderStock();
   });
 }
@@ -493,25 +706,16 @@ function renderDelivery(){
 
   document.getElementById('screen-delivery').innerHTML=`
     <div class="mt8" style="margin-bottom:14px">
-      <button class="btn btn-accent" onclick="openOcr()" style="display:flex;align-items:center;justify-content:center;gap:8px">
-        📋 伝票テキストを貼り付ける
-        <span class="vi">Dán nội dung phiếu giao hàng</span>
-      </button>
+      <button class="btn btn-accent" onclick="openOcr()">${t('delPasteBtn')}</button>
     </div>
-    <p style="font-size:12px;color:var(--text-sub);margin-bottom:4px">
-      または手動で商品を選んで数量を入力。<br>
-      <span style="font-size:11px">Hoặc chọn thủ công và nhập số lượng.</span>
-    </p>
-    ${lastAdj?`<p style="font-size:11px;color:var(--text-sub);margin-bottom:12px">前回の残数報告より / Từ báo cáo lần trước</p>`:''}
+    <p style="font-size:12px;color:var(--text-sub);margin-bottom:4px">${t('delHint')}</p>
+    ${lastAdj?`<p style="font-size:11px;color:var(--text-sub);margin-bottom:12px">${t('delFrom')}</p>`:''}
     <div id="dl">${items.map(p=>delItemHTML(p)).join('')}</div>
     <div id="d-add" class="mt8">
-      <button class="btn btn-ghost btn-sm" onclick="showAllDel()">＋ 他の商品を追加 / Thêm sản phẩm khác</button>
+      <button class="btn btn-ghost btn-sm" onclick="showAllDel()">${t('delAddMore')}</button>
     </div>
     <div class="mt12">
-      <button class="btn btn-primary" onclick="submitDel()">
-        ✓ 受取完了・在庫へ加算
-        <span class="vi">Xác nhận đã nhận & cộng vào tồn kho</span>
-      </button>
+      <button class="btn btn-primary" onclick="submitDel()">${t('btnDelDone')}</button>
     </div>`;
 }
 function delItemHTML(p){
@@ -519,7 +723,7 @@ function delItemHTML(p){
   return `<div class="d-item" id="di-${p.id}">
     <div class="d-row">
       <div class="chk ${on?'on':''}" id="dcb-${p.id}" onclick="togD('${p.id}')" style="cursor:pointer">✓</div>
-      <div class="names" style="flex:1"><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div></div>
+      <div class="names" style="flex:1"><div style="font-size:15px;font-weight:600">${pname(p)}</div><div style="font-size:12px;color:var(--text-sub)">${pnamesub(p)}</div></div>
       <div class="stepper" style="width:auto">
         <button class="step-btn" style="width:46px;height:46px" onclick="stepD('${p.id}',-1)">−</button>
         <div class="step-val" id="dv-${p.id}" style="font-size:22px;min-width:46px">${dVals[p.id]||0}</div>
@@ -552,12 +756,13 @@ function showAllDel(){
 }
 function submitDel(){
   const ids=Object.keys(dChk).filter(id=>dChk[id]&&dVals[id]>0);
-  if(!ids.length){toast('商品と数量を入力してください');return;}
-  confirm2('受取完了',`${ids.length}品を在庫へ加算します。\nCộng ${ids.length} sản phẩm vào tồn kho?`,()=>{
+  if(!ids.length){toast(t('enterQty'));return;}
+  confirm2(t('confirmDel'), t('confirmDelBody', ids.length), ()=>{
     addEvt('delivery',ids.map(id=>({productId:id,qty:dVals[id]})),'納品確認');
     ids.forEach(id=>{delete dChk[id];dVals[id]=0;});
-    toast('在庫へ加算しました ✓');
-    renderDelivery();
+    toast(t('toastDelivered'));
+    closeOcr();
+    go('stock');
   });
 }
 
@@ -569,19 +774,13 @@ function renderSales(){
   const sorted=[...prods].sort((a,b)=>a.nameJa.localeCompare(b.nameJa,'ja'));
   document.getElementById('screen-sales').innerHTML=`
     <div class="mt8" style="margin-bottom:14px">
-      <button class="btn btn-accent" onclick="openSalesPaste()" style="display:flex;align-items:center;justify-content:center;gap:8px">
-        📋 販売データを貼り付ける
-        <span class="vi">Dán dữ liệu bán hàng</span>
-      </button>
+      <button class="btn btn-accent" onclick="openSalesPaste()">${t('salePasteBtn')}</button>
     </div>
-    <p style="font-size:12px;color:var(--text-sub);margin-bottom:12px">
-      または手動で数量を入力。<br>
-      <span style="font-size:11px">Hoặc nhập số lượng thủ công.</span>
-    </p>
+    <p style="font-size:12px;color:var(--text-sub);margin-bottom:12px">${t('saleManual')}</p>
     <div>${sorted.map(p=>{
       if(!(p.id in sVals)) sVals[p.id]=0;
       return `<div class="s-item">
-        <div class="names" style="flex:1"><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div><div class="unit-tag">在庫 ${sm[p.id]||0} ${p.unit}</div></div>
+        <div class="names" style="flex:1"><div style="font-size:15px;font-weight:600">${pname(p)}</div><div style="font-size:12px;color:var(--text-sub)">${pnamesub(p)}</div><div class="unit-tag">${t('stockLabel')} ${sm[p.id]||0} ${p.unit}</div></div>
         <div class="stepper">
           <button class="step-btn" onclick="stepS('${p.id}',-1)">−</button>
           <div class="step-val" id="sv-${p.id}">${sVals[p.id]}</div>
@@ -590,10 +789,7 @@ function renderSales(){
       </div>`;
     }).join('')}</div>
     <div class="mt12">
-      <button class="btn btn-primary" onclick="submitSales()">
-        ✓ 販売を確定・在庫から差引
-        <span class="vi">Xác nhận bán hàng & trừ tồn kho</span>
-      </button>
+      <button class="btn btn-primary" onclick="submitSales()">${t('btnSaleDone')}</button>
     </div>`;
 }
 function stepS(id,d){
@@ -603,11 +799,11 @@ function stepS(id,d){
 }
 function submitSales(){
   const items=Object.entries(sVals).filter(([,q])=>q>0).map(([pid,qty])=>({productId:pid,qty}));
-  if(!items.length){toast('数量を入力してください');return;}
-  confirm2('販売を確定しますか？',`${items.length}品の販売数を在庫から差し引きます。\nTrừ tồn kho ${items.length} sản phẩm?`,()=>{
+  if(!items.length){toast(t('enterQty'));return;}
+  confirm2(t('confirmSale'), t('confirmSaleBody', items.length), ()=>{
     addEvt('sale',items,'販売確定');
     items.forEach(i=>{sVals[i.productId]=0;});
-    toast('販売を確定しました ✓');
+    toast(t('toastSold'));
     renderSales();
   });
 }
@@ -616,10 +812,14 @@ function submitSales(){
 function openSalesPaste(){
   const ov=document.getElementById('sales-paste-ov');
   ov.style.display='flex';
+  const tt=document.getElementById('sale-paste-title-txt');
+  const st=document.getElementById('sale-paste-sub-txt');
+  if(tt) tt.textContent=t('salePasteTitle');
+  if(st) st.textContent=t('salePasteSub');
   document.getElementById('sales-paste-body').innerHTML=`
     <textarea id="sales-paste-input"
       style="width:100%;height:160px;padding:12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:15px;background:var(--bg);color:var(--text);resize:none;outline:none;font-family:inherit;margin-bottom:12px"
-      placeholder="例 / Ví dụ:&#10;Tamago 13&#10;Daikon 12&#10;Tsukune 4&#10;Roll Kyabetsu 5"></textarea>
+      placeholder="${t('salePastePH')}"></textarea>
     <button class="btn btn-primary" onclick="parseSalesText()">
       読み取る / Đọc nội dung
     </button>`;
@@ -634,7 +834,7 @@ function closeSalesPaste(){
 
 function parseSalesText(){
   const text=(document.getElementById('sales-paste-input').value||'').trim();
-  if(!text){toast('テキストを入力してください');return;}
+  if(!text){toast(t('enterText'));return;}
 
   const prods=loadProds().filter(p=>p.active);
   const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
@@ -687,7 +887,7 @@ function parseSalesText(){
   }
 
   if(!matched.length&&!unmatched.length){
-    toast('商品が見つかりませんでした');return;
+    toast(t('noMatch'));return;
   }
 
   // Pre-fill sVals
@@ -695,13 +895,13 @@ function parseSalesText(){
 
   document.getElementById('sales-paste-body').innerHTML=`
     <div style="margin-bottom:12px">
-      <p style="font-size:13px;font-weight:700;margin-bottom:2px">読み取り結果 / Kết quả đọc</p>
-      <p style="font-size:11px;color:var(--text-sub)">内容を確認してください。<br>Kiểm tra lại nội dung.</p>
+      <p style="font-size:13px;font-weight:700;margin-bottom:2px">${t('resultTitle')}</p>
+      <p style="font-size:11px;color:var(--text-sub)">${t('resultSub')}</p>
     </div>
     ${matched.map(i=>`
       <div class="ocr-result-item">
         <div style="flex:1">
-          <div style="font-size:14px;font-weight:600">${i.product.nameVi}</div>
+          <div style="font-size:14px;font-weight:600">${pname(i.product)}</div>
           <div style="font-size:11px;color:var(--text-sub)">${i.nameOnReceipt}</div>
         </div>
         <span class="ocr-badge matched">✓</span>
@@ -713,17 +913,14 @@ function parseSalesText(){
       </div>`).join('')}
     ${unmatched.length?`
       <div style="margin-top:12px;padding:10px;background:var(--warn-bg);border-radius:var(--r-sm)">
-        <p style="font-size:12px;font-weight:700;color:var(--warn);margin-bottom:6px">⚠️ マスタに未登録 / Chưa có trong danh sách</p>
+        <p style="font-size:12px;font-weight:700;color:var(--warn);margin-bottom:6px">${t('unmatchedTitle')}</p>
         ${unmatched.map(i=>`<div style="font-size:13px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)">${i.nameOnReceipt} × ${i.qty}</div>`).join('')}
       </div>`:''}
     <div class="mt8">
-      <button class="btn btn-ghost btn-sm" onclick="openSalesPaste()">← 貼り直す / Dán lại</button>
+      <button class="btn btn-ghost btn-sm" onclick="openSalesPaste()">${t('pasteAgain')}</button>
     </div>
     <div class="mt8">
-      <button class="btn btn-primary" onclick="applySalesPaste()">
-        ✓ この内容で販売画面へ
-        <span class="vi">Xác nhận & chuyển sang màn hình bán hàng</span>
-      </button>
+<button class="btn btn-primary" onclick="applySalesPaste()">${t('applySale')}</button>
     </div>`;
 }
 
@@ -736,7 +933,7 @@ function stepSalePaste(id,d){
 function applySalesPaste(){
   closeSalesPaste();
   renderSales();
-  toast('販売データを反映しました ✓');
+  toast(t('toastSalePaste'));
 }
 
 // ─── ADMIN ────────────────────────────────────────────────────────────
@@ -745,56 +942,53 @@ function renderAdmin(){
   const prods=loadProds();
   const sm=stocksMap();
   const evts=[...loadEvts()].reverse().slice(0,40);
-  const typeLabel={init:'初回登録',adjust:'在庫修正',delivery:'納品',sale:'販売',product_add:'商品追加'};
+  const typeLabel=t('typeLabel');
   document.getElementById('screen-admin').innerHTML=`
     <div class="adm-sec">
-      <div class="adm-hdr" onclick="togAddForm()">➕ 商品を追加 / Thêm sản phẩm</div>
+      <div class="adm-hdr" onclick="togAddForm()">${t('adminAddTitle')}</div>
       <div id="add-form" style="display:${addFormOpen?'block':'none'}" class="adm-body">
-        <div class="form-group"><label class="form-label">日本語名 / Tên tiếng Nhật</label><input class="form-input" id="np-ja" type="text" placeholder="例：ホタテ"></div>
-        <div class="form-group"><label class="form-label">ベトナム語名 / Tên tiếng Việt</label><input class="form-input" id="np-vi" type="text" placeholder="Ví dụ: Sò điệp"></div>
-        <div class="form-group"><label class="form-label">単位 / Đơn vị</label><input class="form-input" id="np-unit" type="text" placeholder="份 / 袋 / 本 / 個"></div>
-        <div class="form-group"><label class="form-label">警告ライン / Mức cảnh báo</label><input class="form-input" id="np-warn" type="number" min="0" value="2"></div>
-        <button class="btn btn-primary" onclick="addProd()">追加 / Thêm</button>
+        <div class="form-group"><label class="form-label">${t('labelJa')}</label><input class="form-input" id="np-ja" type="text"></div>
+        <div class="form-group"><label class="form-label">${t('labelVi')}</label><input class="form-input" id="np-vi" type="text"></div>
+        <div class="form-group"><label class="form-label">${t('labelUnit')}</label><input class="form-input" id="np-unit" type="text" placeholder="份 / 袋 / 本 / 個"></div>
+        <div class="form-group"><label class="form-label">${t('labelWarn')}</label><input class="form-input" id="np-warn" type="number" min="0" value="2"></div>
+        <button class="btn btn-primary" onclick="addProd()">${t('btnAdd')}</button>
       </div>
     </div>
     <div class="adm-sec">
-      <div class="adm-hdr">📋 商品一覧 / Danh sách sản phẩm</div>
+      <div class="adm-hdr">${t('adminListTitle')}</div>
       <div class="adm-body" style="padding:0 16px">
         ${prods.map(p=>`
           <div class="prod-row">
-            <div class="names" style="flex:1"><div class="name-vi">${p.nameVi}</div><div class="name-ja">${p.nameJa}</div><div class="unit-tag">在庫 ${sm[p.id]||0} / 警告 ${p.warnAt}</div></div>
-            <span class="badge ${p.active?'':'off'}">${p.active?'使用中':'終了'}</span>
-            <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;margin-left:6px" onclick="togProd('${p.id}')">${p.active?'停止':'復活'}</button>
+            <div class="names" style="flex:1"><div style="font-size:15px;font-weight:600">${pname(p)}</div><div style="font-size:12px;color:var(--text-sub)">${pnamesub(p)}</div><div class="unit-tag">${t('stockLabel')} ${sm[p.id]||0} / ${t('warnLabel')} ${p.warnAt}</div></div>
+            <span class="badge ${p.active?'':'off'}">${p.active?t('active'):t('inactive')}</span>
+            <button class="btn btn-ghost btn-sm" style="width:auto;padding:8px 12px;margin-left:6px" onclick="togProd('${p.id}')">${p.active?t('btnStop'):t('btnRevive')}</button>
           </div>`).join('')}
       </div>
     </div>
     <div class="adm-sec">
-      <div class="adm-hdr">📜 履歴 / Lịch sử</div>
+      <div class="adm-hdr">${t('adminHistTitle')}</div>
       <div class="adm-body" style="padding:0 16px">
         ${evts.length?evts.map(ev=>{
           const detail=(ev.items||[]).map(i=>{const p=prods.find(x=>x.id===i.productId);return`${p?p.nameJa:i.productId}:${i.qty}`;}).join(', ');
           const d=new Date(ev.at);
           const ts=`${d.getMonth()+1}/${d.getDate()} ${d.getHours().toString().padStart(2,'0')}:${d.getMinutes().toString().padStart(2,'0')}`;
           return`<div class="hist-item"><div class="hist-time">${ts}</div><div class="hist-desc">${typeLabel[ev.type]||ev.type}</div><div class="hist-detail">${detail}</div></div>`;
-        }).join(''):'<div class="empty"><p>履歴なし / Chưa có lịch sử</p></div>'}
+        }).join(''):`<div class='empty'><p>${t('noHistory')}</p></div>`}
       </div>
     </div>
     <div class="mt12" style="margin-bottom:20px">
       <button class="btn btn-ghost" style="color:var(--danger);border-color:var(--danger)" onclick="resetAll()">⚠️ データをリセット / Xóa toàn bộ dữ liệu</button>
     </div>
     <div class="adm-sec" style="margin-bottom:20px">
-      <div class="adm-hdr">💾 バックアップ / Sao lưu dữ liệu</div>
+      <div class="adm-hdr">${t('adminBackupTitle')}</div>
       <div class="adm-body">
         <p style="font-size:12px;color:var(--text-sub);margin-bottom:14px">
           データが消えた時に備えて定期的に保存してください。<br>
           <span style="font-size:11px">Hãy lưu định kỳ để phòng khi mất dữ liệu.</span>
         </p>
-        <button class="btn btn-primary" onclick="exportData()" style="margin-bottom:10px">
-          💾 データを保存する / Lưu dữ liệu
-        </button>
+        <button class="btn btn-primary" onclick="exportData()" style="margin-bottom:10px">${t('btnSave')}</button>
         <label class="btn btn-ghost" style="display:block;text-align:center;cursor:pointer">
-          📂 データを読み込む / Khôi phục dữ liệu
-          <input type="file" accept=".json" style="display:none" onchange="importData(this)">
+          ${t('btnLoad')}<input type="file" accept=".json" style="display:none" onchange="importData(this)">
         </label>
       </div>
     </div>`;
@@ -809,13 +1003,13 @@ function addProd(){
   const vi=document.getElementById('np-vi').value.trim();
   const unit=document.getElementById('np-unit').value.trim()||'份';
   const warn=parseInt(document.getElementById('np-warn').value)||2;
-  if(!ja||!vi){toast('名前を入力してください');return;}
+  if(!ja||!vi){toast(t('enterName'));return;}
   const prods=loadProds();
   const id='p_'+Date.now();
   prods.push({id,nameJa:ja,nameVi:vi,unit,warnAt:warn,active:true});
   saveProds(prods);
   addEvt('product_add',[],'商品追加: '+ja);
-  toast(ja+' を追加しました ✓');
+  toast(t('toastAdded', ja));
   addFormOpen=false;
   renderAdmin();
 }
@@ -825,11 +1019,11 @@ function togProd(id){
   if(!p) return;
   p.active=!p.active;
   saveProds(prods);
-  toast(p.nameJa+'を'+(p.active?'使用中':'取扱終了')+'にしました');
+  toast(pname(p)+' → '+(p.active?t('active'):t('inactive')));
   renderAdmin();
 }
 function resetAll(){
-  confirm2('⚠️ データを削除','すべての在庫・履歴データを削除します。この操作は元に戻せません。\nXóa toàn bộ dữ liệu. Không thể hoàn tác.',()=>{
+  confirm2(t('confirmReset'), t('confirmResetBody'), ()=>{
     localStorage.removeItem('hk_products');
     localStorage.removeItem('hk_events');
     location.reload();
@@ -842,7 +1036,7 @@ function openOcr(){
   document.getElementById('ocr-body').innerHTML=`
     <textarea id="paste-input"
       style="width:100%;height:160px;padding:12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:15px;background:var(--bg);color:var(--text);resize:none;outline:none;font-family:inherit;margin-bottom:12px"
-      placeholder="例 / Ví dụ:&#10;Cơm nắm sò điệp 10&#10;Hành baro 1&#10;Củ cải trắng 25&#10;Đậu hũ chiên 12"></textarea>
+      placeholder="${t('delPastePH')}"></textarea>
     <button class="btn btn-primary" onclick="parsePastedText()">
       読み取る / Đọc nội dung
     </button>`;
@@ -860,7 +1054,7 @@ function closeOcr(){
 
 function parsePastedText(){
   const text=(document.getElementById('paste-input').value||'').trim();
-  if(!text){toast('テキストを入力してください');return;}
+  if(!text){toast(t('enterText'));return;}
 
   const prods=loadProds().filter(p=>p.active);
   const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
@@ -923,21 +1117,19 @@ function parsePastedText(){
 }
 
 function showParseResult(matched, unmatched){
-  // Pre-fill delivery vals
-  matched.forEach(i=>{
-    dVals[i.product.id]=i.qty;
-    dChk[i.product.id]=true;
-  });
+  // Store matched items for direct submission
+  const ocrItems = {};
+  matched.forEach(i=>{ ocrItems[i.product.id]=i.qty; });
 
   document.getElementById('ocr-body').innerHTML=`
     <div style="margin-bottom:12px">
-      <p style="font-size:13px;font-weight:700;margin-bottom:2px">読み取り結果 / Kết quả đọc</p>
-      <p style="font-size:11px;color:var(--text-sub)">現物と照合して数量を確認してください。<br>Đối chiếu với hàng và kiểm tra số lượng.</p>
+      <p style="font-size:13px;font-weight:700;margin-bottom:2px">${t('resultTitle')}</p>
+      <p style="font-size:11px;color:var(--text-sub)">${t('resultSub')}</p>
     </div>
     ${matched.map(i=>`
       <div class="ocr-result-item">
         <div style="flex:1">
-          <div style="font-size:14px;font-weight:600">${i.product.nameVi}</div>
+          <div style="font-size:14px;font-weight:600">${pname(i.product)}</div>
           <div style="font-size:11px;color:var(--text-sub)">${i.nameOnReceipt}</div>
         </div>
         <span class="ocr-badge matched">✓</span>
@@ -949,31 +1141,44 @@ function showParseResult(matched, unmatched){
       </div>`).join('')}
     ${unmatched.length?`
       <div style="margin-top:12px;padding:10px;background:var(--warn-bg);border-radius:var(--r-sm)">
-        <p style="font-size:12px;font-weight:700;color:var(--warn);margin-bottom:6px">⚠️ マスタに未登録 / Chưa có trong danh sách</p>
+        <p style="font-size:12px;font-weight:700;color:var(--warn);margin-bottom:6px">${t('unmatchedTitle')}</p>
         ${unmatched.map(i=>`<div style="font-size:13px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)">${i.nameOnReceipt} × ${i.qty}</div>`).join('')}
-        <p style="font-size:11px;color:var(--text-sub);margin-top:6px">⚙️管理から商品を追加できます。</p>
       </div>`:''}
     <div class="mt8">
-      <button class="btn btn-ghost btn-sm" onclick="openOcr()">← 貼り直す / Dán lại</button>
+      <button class="btn btn-ghost btn-sm" onclick="openOcr()">${t('pasteAgain')}</button>
     </div>
     <div class="mt8">
-      <button class="btn btn-primary" onclick="applyOcrResult()">
-        ✓ この内容で納品画面へ
-        <span class="vi">Xác nhận & chuyển sang màn hình nhận hàng</span>
+      <button class="btn btn-primary" onclick="confirmOcrDelivery()">
+        ✓ ${lang==='vi'?'Xác nhận nhận hàng & cộng vào tồn kho':'受取完了・在庫へ加算'}
       </button>
     </div>`;
+
+  // Save to module-level for confirmOcrDelivery
+  window._ocrMatchedItems = matched;
 }
 
 function stepOcrItem(id,d){
-  dVals[id]=Math.max(0,(dVals[id]||0)+d);
+  // Update both display and internal tracking
   const el=document.getElementById('ocrv-'+id);
-  if(el) el.textContent=dVals[id];
+  if(!el) return;
+  const newVal=Math.max(0,parseInt(el.textContent||0)+d);
+  el.textContent=newVal;
+  // Update matched items array
+  if(window._ocrMatchedItems){
+    const item=window._ocrMatchedItems.find(i=>i.product.id===id);
+    if(item) item.qty=newVal;
+  }
 }
 
-function applyOcrResult(){
+function confirmOcrDelivery(){
+  const items=(window._ocrMatchedItems||[]).filter(i=>i.qty>0).map(i=>({productId:i.product.id, qty:i.qty}));
+  if(!items.length){toast(t('enterQty'));return;}
+  addEvt('delivery', items, '伝票テキストによる納品');
+  window._ocrMatchedItems=null;
   closeOcr();
-  renderDelivery();
-  toast('伝票を反映しました ✓');
+  toast(t('toastDelivered'));
+  renderStock();
+  go('stock');
 }
 
 // ─── BACKUP / RESTORE ────────────────────────────────────────────────
@@ -994,7 +1199,7 @@ function exportData(){
   a.download=`hokkiya-stock-${stamp}.json`;
   a.click();
   URL.revokeObjectURL(url);
-  toast('💾 保存しました / Đã lưu ✓');
+  toast(t('toastSaved'));
 }
 
 function importData(input){
@@ -1011,13 +1216,13 @@ function importData(input){
         ()=>{
           saveProds(data.products);
           saveEvts(data.events);
-          toast('📂 データを復元しました ✓');
+          toast(t('toastRestored'));
           renderAdmin();
           renderStock();
         }
       );
     } catch(err){
-      toast('⚠️ ファイルが正しくありません');
+      toast(t('fileError'));
     }
   };
   reader.readAsText(file);
@@ -1032,6 +1237,7 @@ function confirm2(title,body,ok,danger=false){
   document.getElementById('conf-body').textContent=body;
   const btn=document.getElementById('conf-ok');
   btn.className='btn '+(danger?'btn-danger':'btn-primary');
+  btn.textContent=t('confirmOk');
   confCB=ok;
   document.getElementById('conf').classList.add('open');
 }
@@ -1048,6 +1254,7 @@ function toast(msg){
 
 // ─── BOOT ─────────────────────────────────────────────────────────────
 boot();
+applyLang();
 renderStock();
 </script>
 </body>
