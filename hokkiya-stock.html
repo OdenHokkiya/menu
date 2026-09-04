@@ -288,6 +288,7 @@ const T = {
     needSelect:'Vui lòng chọn sản phẩm', needQty:'Vui lòng nhập số lượng',
     needName:'Vui lòng nhập tên', needText:'Vui lòng nhập văn bản',
     noMatch:'Không tìm thấy sản phẩm phù hợp', fileErr:'File không hợp lệ',
+    saleApplyBtn:'Phản ánh vào màn hình bán hàng',
     debugTitle:'🔍 Debug', copyDebug:'📋 Sao chép debug info',
     btnReset2:'⚠️ Xóa toàn bộ dữ liệu',
   },
@@ -340,6 +341,7 @@ const T = {
     needSelect:'商品を選択してください', needQty:'数量を入力してください',
     needName:'名前を入力してください', needText:'テキストを入力してください',
     noMatch:'商品が見つかりませんでした', fileErr:'ファイルが正しくありません',
+    saleApplyBtn:'販売画面に反映する（まだ確定しません）',
     debugTitle:'🔍 デバッグ情報', copyDebug:'📋 デバッグ情報をコピー',
     btnReset2:'⚠️ データをリセット',
   }
@@ -500,13 +502,18 @@ function renderStock() {
   const prods = loadProds().filter(p => p.active);
   const sm = stocksMap();
   const sorted = [...prods].sort((a, b) => (sm[a.id] || 0) - (sm[b.id] || 0));
+  // Sync rVals with current stock for unchecked items only
+  prods.forEach(p => {
+    if (!rChk[p.id]) rVals[p.id] = sm[p.id] || 0;
+  });
+  const anyChecked = Object.values(rChk).some(v => v);
   document.getElementById('screen-stock').innerHTML = `
     <div class="srch"><span class="srch-ic">🔍</span>
       <input type="text" placeholder="${t('searchPH')}" oninput="filterStock(this.value)">
     </div>
     <p style="font-size:11px;color:var(--sub);margin-bottom:10px">${t('stockHint')}</p>
     <div class="stock-list" id="sl">${sorted.map(p => stockItemHTML(p, sm[p.id] || 0)).join('')}</div>
-    <div id="ss-btns" class="sticky-btns" style="display:none">
+    <div id="ss-btns" class="sticky-btns" style="display:${anyChecked ? 'block' : 'none'}">
       <button class="btn btn-a" onclick="genSS()">${t('btnSS')}</button>
       <div class="mt8"><button class="btn btn-p" onclick="submitReport()">${t('btnUpdate')}</button></div>
     </div>`;
@@ -515,7 +522,8 @@ function renderStock() {
 function stockItemHTML(p, qty) {
   const cls = qty === 0 ? 'danger' : qty <= p.warnAt ? 'warn' : '';
   const on = !!rChk[p.id];
-  if (!(p.id in rVals)) rVals[p.id] = qty;
+  // rVals already synced in renderStock; use it directly
+  const dispVal = rVals[p.id] !== undefined ? rVals[p.id] : qty;
   return `
     <div class="si ${cls} ${on ? 'checked' : ''}" id="si-${p.id}" data-n="${p.nameJa} ${p.nameVi}" style="flex-direction:column;align-items:stretch">
       <div class="si-top" onclick="togSR('${p.id}',${qty})">
@@ -527,7 +535,7 @@ function stockItemHTML(p, qty) {
         <p style="font-size:11px;color:var(--sub);margin:8px 0 6px">${t('actualQty')}</p>
         <div class="stepper">
           <button class="stb" onclick="stepSR('${p.id}',-1)">−</button>
-          <div class="stv" id="srv-${p.id}">${rVals[p.id]}</div>
+          <div class="stv" id="srv-${p.id}">${dispVal}</div>
           <button class="stb" onclick="stepSR('${p.id}',1)">＋</button>
         </div>
       </div>
@@ -819,14 +827,16 @@ function normalize(s) {
     .replace(/[úùủũụưứừửữự]/g,'u')
     .replace(/[ýỳỷỹỵ]/g,'y')
     .replace(/đ/g,'d')
-    .replace(/[^\w\s]/g,'')
+    .replace(/[^\w\s\u3000-\u9fff\uac00-\ud7af]/g,'')
     .replace(/\s+/g,' ').trim();
 }
 
 function parseItemText(text) {
   const prods = loadProds().filter(p => p.active);
   const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
-  const matched = [], unmatched = [];
+  // Use a Map to accumulate qty per product (handles duplicate lines)
+  const matchedMap = new Map();  // productId → {product, qty, nameOnReceipt}
+  const unmatched = [];
 
   for (const line of lines) {
     const m = line.match(/^(.*?)\s+([\d.]+)\s*$/);
@@ -836,14 +846,19 @@ function parseItemText(text) {
     if (!qty) continue;
 
     const normName = normalize(namePart);
-    const nameWords = new Set(normName.split(' ').filter(w => w.length >= 3));
+    if (!normName) continue;  // skip empty after normalization
+    const nameWords = new Set(normName.split(' ').filter(w => w.length >= 2));
     let best = null, bestScore = 0;
 
     for (const p of prods) {
-      const targets = [normalize(p.nameVi), normalize(p.nameJa), normalize(p.nameRo || '')];
+      const targets = [
+        normalize(p.nameVi),
+        normalize(p.nameJa),
+        normalize(p.nameRo || ''),
+      ];
       for (const tgt of targets) {
-        if (!tgt) continue;
-        const tgtWords = new Set(tgt.split(' ').filter(w => w.length >= 3));
+        if (!tgt) continue;  // skip empty targets
+        const tgtWords = new Set(tgt.split(' ').filter(w => w.length >= 2));
         let score = 0;
         if (tgt === normName) score = 100;
         else if (tgt.startsWith(normName) || normName.startsWith(tgt)) score = 80;
@@ -855,10 +870,18 @@ function parseItemText(text) {
       }
     }
 
-    if (best && bestScore >= 60) matched.push({ product: best, qty, nameOnReceipt: namePart });
-    else unmatched.push({ nameOnReceipt: namePart, qty });
+    if (best && bestScore >= 60) {
+      if (matchedMap.has(best.id)) {
+        // Accumulate qty for duplicate product lines
+        matchedMap.get(best.id).qty += qty;
+      } else {
+        matchedMap.set(best.id, { product: best, qty, nameOnReceipt: namePart });
+      }
+    } else {
+      unmatched.push({ nameOnReceipt: namePart, qty });
+    }
   }
-  return { matched, unmatched };
+  return { matched: [...matchedMap.values()], unmatched };
 }
 
 function buildResultHTML(result, mode) {
@@ -886,7 +909,7 @@ function buildResultHTML(result, mode) {
         ${result.unmatched.map(i => `<div style="font-size:13px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)">${i.nameOnReceipt} × ${i.qty}</div>`).join('')}
       </div>` : ''}
     <div class="mt8"><button class="btn btn-g btn-sm" onclick="${mode === 'del' ? 'openDelOv' : 'openSaleOv'}()">${t('pasteAgain')}</button></div>
-    <div class="mt8"><button class="btn btn-p" onclick="${applyFn}()">✓ ${mode === 'del' ? t('btnDelDone') : t('btnSaleDone')}</button></div>`;
+    <div class="mt8"><button class="btn btn-p" onclick="${applyFn}()">✓ ${mode === 'del' ? t('btnDelDone') : t('saleApplyBtn')}</button></div>`;
 }
 
 // ════════════════════════════════════════════════════════════
@@ -1073,8 +1096,9 @@ function confirm2(title, body, onOk, danger) {
 }
 
 function doConf() {
+  const cb = confCB;   // 退避してからcloseConfでnullにする
   closeConf();
-  if (confCB) confCB();
+  if (cb) cb();
 }
 
 function closeConf() {
