@@ -242,8 +242,10 @@ const saveEvts =e=>LS.set('hk_events',e);
 
 function addEvt(type,items,note=''){
   const e=loadEvts();
-  e.push({id:Date.now().toString(),type,at:new Date().toISOString(),items,note});
+  const newEvt={id:Date.now().toString(),type,at:new Date().toISOString(),items,note};
+  e.push(newEvt);
   saveEvts(e);
+  console.log('[addEvt]', type, items, '→ events count:', e.length);
 }
 
 function calcStock(pid){
@@ -1191,12 +1193,13 @@ function stepOcrItem(id,d){
 
 function confirmOcrDelivery(){
   const items=(window._ocrMatchedItems||[]).filter(i=>i.qty>0).map(i=>({productId:i.product.id, qty:i.qty}));
+  console.log('[confirmOcrDelivery] items:', items);
   if(!items.length){toast(t('enterQty'));return;}
   addEvt('delivery', items, '伝票テキストによる納品');
+  console.log('[confirmOcrDelivery] events after:', loadEvts().length);
   window._ocrMatchedItems=null;
   closeOcr();
   toast(t('toastDelivered'));
-  renderStock();
   go('stock');
 }
 
