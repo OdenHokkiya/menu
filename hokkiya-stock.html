@@ -184,6 +184,18 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
   </div>
 </div>
 
+<!-- Sales paste overlay -->
+<div id="sales-paste-ov" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:800;align-items:flex-end;justify-content:center" class="sales-ov-wrap">
+  <div class="ocr-sheet">
+    <div class="ocr-title">📋 販売データを貼り付ける / Dán dữ liệu bán hàng</div>
+    <div class="ocr-sub">会計ソフトのデータをコピーして貼り付けてください。<br>Sao chép dữ liệu từ phần mềm tính tiền và dán vào đây.</div>
+    <div id="sales-paste-body"></div>
+    <div class="mt8">
+      <button class="btn btn-ghost" onclick="closeSalesPaste()">キャンセル / Hủy</button>
+    </div>
+  </div>
+</div>
+
 <!-- Text paste overlay -->
 <div id="ocr-ov">
   <div class="ocr-sheet">
@@ -556,9 +568,15 @@ function renderSales(){
   const sm=stocksMap();
   const sorted=[...prods].sort((a,b)=>a.nameJa.localeCompare(b.nameJa,'ja'));
   document.getElementById('screen-sales').innerHTML=`
+    <div class="mt8" style="margin-bottom:14px">
+      <button class="btn btn-accent" onclick="openSalesPaste()" style="display:flex;align-items:center;justify-content:center;gap:8px">
+        📋 販売データを貼り付ける
+        <span class="vi">Dán dữ liệu bán hàng</span>
+      </button>
+    </div>
     <p style="font-size:12px;color:var(--text-sub);margin-bottom:12px">
-      今日売れた数量を入力してください。<br>
-      <span style="font-size:11px">Nhập số lượng đã bán hôm nay.</span>
+      または手動で数量を入力。<br>
+      <span style="font-size:11px">Hoặc nhập số lượng thủ công.</span>
     </p>
     <div>${sorted.map(p=>{
       if(!(p.id in sVals)) sVals[p.id]=0;
@@ -592,6 +610,133 @@ function submitSales(){
     toast('販売を確定しました ✓');
     renderSales();
   });
+}
+
+// ─── SALES TEXT PASTE ────────────────────────────────────────────────
+function openSalesPaste(){
+  const ov=document.getElementById('sales-paste-ov');
+  ov.style.display='flex';
+  document.getElementById('sales-paste-body').innerHTML=`
+    <textarea id="sales-paste-input"
+      style="width:100%;height:160px;padding:12px;border:1.5px solid var(--border);border-radius:var(--r-sm);font-size:15px;background:var(--bg);color:var(--text);resize:none;outline:none;font-family:inherit;margin-bottom:12px"
+      placeholder="例 / Ví dụ:&#10;Tamago 13&#10;Daikon 12&#10;Tsukune 4&#10;Roll Kyabetsu 5"></textarea>
+    <button class="btn btn-primary" onclick="parseSalesText()">
+      読み取る / Đọc nội dung
+    </button>`;
+  setTimeout(()=>{
+    const ta=document.getElementById('sales-paste-input');
+    if(ta) ta.focus();
+  },200);
+}
+function closeSalesPaste(){
+  document.getElementById('sales-paste-ov').style.display='none';
+}
+
+function parseSalesText(){
+  const text=(document.getElementById('sales-paste-input').value||'').trim();
+  if(!text){toast('テキストを入力してください');return;}
+
+  const prods=loadProds().filter(p=>p.active);
+  const lines=text.split('\n').map(l=>l.trim()).filter(Boolean);
+  const matched=[];
+  const unmatched=[];
+
+  const normalize=s=>s.toLowerCase()
+    .replace(/[áàảãạăắằẳẵặâấầẩẫậ]/g,'a')
+    .replace(/[éèẻẽẹêếềểễệ]/g,'e')
+    .replace(/[íìỉĩị]/g,'i')
+    .replace(/[óòỏõọôốồổỗộơớờởỡợ]/g,'o')
+    .replace(/[úùủũụưứừửữự]/g,'u')
+    .replace(/[ýỳỷỹỵ]/g,'y')
+    .replace(/đ/g,'d')
+    .replace(/[^\w\s]/g,'')
+    .replace(/\s+/g,' ').trim();
+
+  for(const line of lines){
+    // 末尾の数字を数量として取得（小数点対応：13.00→13）
+    const m=line.match(/^(.*?)\s+([\d.]+)\s*$/);
+    if(!m) continue;
+    const namePart=m[1].trim();
+    const qty=Math.round(parseFloat(m[2]));
+    if(!qty) continue;
+
+    const normName=normalize(namePart);
+    let best=null, bestScore=0;
+
+    for(const p of prods){
+      const targets=[p.nameVi, p.nameJa].map(normalize);
+      for(const t of targets){
+        let score=0;
+        if(t===normName) score=100;
+        else if(t.includes(normName)||normName.includes(t)) score=50;
+        else {
+          const wa=new Set(normName.split(' '));
+          const wb=new Set(t.split(' '));
+          const overlap=[...wa].filter(w=>w.length>2&&wb.has(w)).length;
+          if(overlap>0) score=overlap*20;
+        }
+        if(score>bestScore){bestScore=score;best=p;}
+      }
+    }
+
+    if(best&&bestScore>=20){
+      matched.push({product:best, qty, nameOnReceipt:namePart});
+    } else {
+      unmatched.push({nameOnReceipt:namePart, qty});
+    }
+  }
+
+  if(!matched.length&&!unmatched.length){
+    toast('商品が見つかりませんでした');return;
+  }
+
+  // Pre-fill sVals
+  matched.forEach(i=>{ sVals[i.product.id]=i.qty; });
+
+  document.getElementById('sales-paste-body').innerHTML=`
+    <div style="margin-bottom:12px">
+      <p style="font-size:13px;font-weight:700;margin-bottom:2px">読み取り結果 / Kết quả đọc</p>
+      <p style="font-size:11px;color:var(--text-sub)">内容を確認してください。<br>Kiểm tra lại nội dung.</p>
+    </div>
+    ${matched.map(i=>`
+      <div class="ocr-result-item">
+        <div style="flex:1">
+          <div style="font-size:14px;font-weight:600">${i.product.nameVi}</div>
+          <div style="font-size:11px;color:var(--text-sub)">${i.nameOnReceipt}</div>
+        </div>
+        <span class="ocr-badge matched">✓</span>
+        <div class="stepper" style="width:auto">
+          <button class="step-btn" style="width:40px;height:40px;font-size:22px" onclick="stepSalePaste('${i.product.id}',-1)">−</button>
+          <div class="step-val" id="spv-${i.product.id}" style="font-size:20px;min-width:44px">${i.qty}</div>
+          <button class="step-btn" style="width:40px;height:40px;font-size:22px" onclick="stepSalePaste('${i.product.id}',1)">＋</button>
+        </div>
+      </div>`).join('')}
+    ${unmatched.length?`
+      <div style="margin-top:12px;padding:10px;background:var(--warn-bg);border-radius:var(--r-sm)">
+        <p style="font-size:12px;font-weight:700;color:var(--warn);margin-bottom:6px">⚠️ マスタに未登録 / Chưa có trong danh sách</p>
+        ${unmatched.map(i=>`<div style="font-size:13px;padding:4px 0;border-bottom:1px solid rgba(0,0,0,.06)">${i.nameOnReceipt} × ${i.qty}</div>`).join('')}
+      </div>`:''}
+    <div class="mt8">
+      <button class="btn btn-ghost btn-sm" onclick="openSalesPaste()">← 貼り直す / Dán lại</button>
+    </div>
+    <div class="mt8">
+      <button class="btn btn-primary" onclick="applySalesPaste()">
+        ✓ この内容で販売画面へ
+        <span class="vi">Xác nhận & chuyển sang màn hình bán hàng</span>
+      </button>
+    </div>`;
+}
+
+function stepSalePaste(id,d){
+  sVals[id]=Math.max(0,(sVals[id]||0)+d);
+  const el=document.getElementById('spv-'+id);
+  if(el) el.textContent=sVals[id];
+}
+
+function applySalesPaste(){
+  closeSalesPaste();
+  renderSales();
+  toast('販売データを反映しました ✓');
 }
 
 // ─── ADMIN ────────────────────────────────────────────────────────────
@@ -636,6 +781,22 @@ function renderAdmin(){
     </div>
     <div class="mt12" style="margin-bottom:20px">
       <button class="btn btn-ghost" style="color:var(--danger);border-color:var(--danger)" onclick="resetAll()">⚠️ データをリセット / Xóa toàn bộ dữ liệu</button>
+    </div>
+    <div class="adm-sec" style="margin-bottom:20px">
+      <div class="adm-hdr">💾 バックアップ / Sao lưu dữ liệu</div>
+      <div class="adm-body">
+        <p style="font-size:12px;color:var(--text-sub);margin-bottom:14px">
+          データが消えた時に備えて定期的に保存してください。<br>
+          <span style="font-size:11px">Hãy lưu định kỳ để phòng khi mất dữ liệu.</span>
+        </p>
+        <button class="btn btn-primary" onclick="exportData()" style="margin-bottom:10px">
+          💾 データを保存する / Lưu dữ liệu
+        </button>
+        <label class="btn btn-ghost" style="display:block;text-align:center;cursor:pointer">
+          📂 データを読み込む / Khôi phục dữ liệu
+          <input type="file" accept=".json" style="display:none" onchange="importData(this)">
+        </label>
+      </div>
     </div>`;
 }
 function togAddForm(){
@@ -813,6 +974,55 @@ function applyOcrResult(){
   closeOcr();
   renderDelivery();
   toast('伝票を反映しました ✓');
+}
+
+// ─── BACKUP / RESTORE ────────────────────────────────────────────────
+function exportData(){
+  const data={
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    products: loadProds(),
+    events: loadEvts(),
+  };
+  const json=JSON.stringify(data, null, 2);
+  const blob=new Blob([json], {type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const now=new Date();
+  const stamp=`${now.getFullYear()}${(now.getMonth()+1).toString().padStart(2,'0')}${now.getDate().toString().padStart(2,'0')}`;
+  a.href=url;
+  a.download=`hokkiya-stock-${stamp}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  toast('💾 保存しました / Đã lưu ✓');
+}
+
+function importData(input){
+  if(!input.files||!input.files[0]) return;
+  const file=input.files[0];
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const data=JSON.parse(e.target.result);
+      if(!data.products||!data.events) throw new Error('invalid format');
+      confirm2(
+        'データを読み込みますか？',
+        `保存日時: ${data.exportedAt ? new Date(data.exportedAt).toLocaleString('ja-JP') : '不明'}\n現在のデータは上書きされます。\nDữ liệu hiện tại sẽ bị ghi đè.`,
+        ()=>{
+          saveProds(data.products);
+          saveEvts(data.events);
+          toast('📂 データを復元しました ✓');
+          renderAdmin();
+          renderStock();
+        }
+      );
+    } catch(err){
+      toast('⚠️ ファイルが正しくありません');
+    }
+  };
+  reader.readAsText(file);
+  // Reset input so same file can be re-selected
+  input.value='';
 }
 
 // ─── CONFIRM ─────────────────────────────────────────────────────────
