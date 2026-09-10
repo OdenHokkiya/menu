@@ -198,21 +198,41 @@ body{font-family:'Hiragino Kaku Gothic ProN','Hiragino Sans',sans-serif;backgrou
 
 <script>
 // ════════════════════════════════════════════════════════════
-// STORAGE
+// STORAGE — Firestore + localStorage cache
 // ════════════════════════════════════════════════════════════
+
+// localStorageはlangとオフラインキャッシュのみ
 const LS = {
   get: k => { try { return JSON.parse(localStorage.getItem(k)); } catch { return null; } },
   set: (k, v) => localStorage.setItem(k, JSON.stringify(v))
 };
-const loadProds = () => LS.get('hk_products') || [];
-const saveProds = p => LS.set('hk_products', p);
-const loadEvts  = () => LS.get('hk_events')  || [];
-const saveEvts  = e => LS.set('hk_events', e);
 
-function addEvt(type, items, note) {
+// インメモリキャッシュ
+let _prods = [];
+let _evts  = [];
+
+const loadProds = () => _prods;
+const saveProds = async (p) => {
+  _prods = p;
+  LS.set('hk_products', p);
+  if (!window._db) return;
+  const { doc, setDoc } = window._fs;
+  try { await setDoc(doc(window._db, 'hokkiya', 'products'), { list: p }); } catch(e) { console.warn('saveProds error:', e); }
+};
+
+const loadEvts = () => _evts;
+const saveEvts = async (e) => {
+  _evts = e;
+  LS.set('hk_events', e);
+  if (!window._db) return;
+  const { doc, setDoc } = window._fs;
+  try { await setDoc(doc(window._db, 'hokkiya', 'events'), { list: e }); } catch(e2) { console.warn('saveEvts error:', e2); }
+};
+
+async function addEvt(type, items, note) {
   const evts = loadEvts();
   evts.push({ id: Date.now().toString(), type, at: new Date().toISOString(), items, note: note || '' });
-  saveEvts(evts);
+  await saveEvts(evts);
 }
 
 function calcStock(pid) {
@@ -231,6 +251,32 @@ function stocksMap() {
   const m = {};
   for (const p of loadProds()) m[p.id] = calcStock(p.id);
   return m;
+}
+
+// Firestoreから全データをロード
+async function loadFromFirestore() {
+  if (!window._db) {
+    // オフラインフォールバック
+    _prods = LS.get('hk_products') || [];
+    _evts  = LS.get('hk_events')   || [];
+    return;
+  }
+  const { doc, getDoc } = window._fs;
+  try {
+    const [pSnap, eSnap] = await Promise.all([
+      getDoc(doc(window._db, 'hokkiya', 'products')),
+      getDoc(doc(window._db, 'hokkiya', 'events')),
+    ]);
+    _prods = pSnap.exists() ? (pSnap.data().list || []) : [];
+    _evts  = eSnap.exists() ? (eSnap.data().list  || []) : [];
+    // ローカルキャッシュも更新
+    LS.set('hk_products', _prods);
+    LS.set('hk_events',   _evts);
+  } catch(e) {
+    console.warn('Firestore load error, using cache:', e);
+    _prods = LS.get('hk_products') || [];
+    _evts  = LS.get('hk_events')   || [];
+  }
 }
 
 // ════════════════════════════════════════════════════════════
@@ -353,7 +399,18 @@ function t(key, ...args) {
   return typeof val === 'function' ? val(...args) : val;
 }
 function pname(p)    { return lang === 'vi' ? p.nameVi : p.nameJa; }
-function pnamesub(p) { return lang === 'vi' ? (p.nameRo || p.nameJa) : p.nameVi; }
+function pnamesub(p) {
+  if (lang === 'vi') return p.nameRo || p.nameJa;
+  return p.nameVi;
+}
+function pmenu(p) {
+  if (lang === 'vi') {
+    const v = (p.menuVi || '').trim();
+    return v;
+  }
+  return (p.menu || '').replace(/、/g, '・').replace(/,/g, '・').trim();
+}
+function pname(p)    { return lang === 'vi' ? p.nameVi : p.nameJa; }
 
 function toggleLang() {
   lang = lang === 'vi' ? 'ja' : 'vi';
@@ -384,63 +441,91 @@ function applyLangUI() {
 // PRODUCT MASTER
 // ════════════════════════════════════════════════════════════
 const DEFAULT_PRODUCTS = [
-  {id:'ramen_salad',   nameJa:'ラーメンサラダ',        nameRo:'Ramen Sarada',         nameVi:'Salad mì ramen',             unit:'袋', warnAt:2, active:true},
-  {id:'asupara',       nameJa:'アスパラバター',          nameRo:'Asupara Bata',         nameVi:'Măng tây xào bơ',            unit:'份', warnAt:2, active:true},
-  {id:'corn',          nameJa:'コーンバター',            nameRo:'Kon Bata',             nameVi:'Bắp Ngọt Xào Bơ',           unit:'份', warnAt:2, active:true},
-  {id:'tako_zangi',    nameJa:'たこザンギ',              nameRo:'Tako Zangi',           nameVi:'Bạch tuộc chiên',            unit:'份', warnAt:2, active:true},
-  {id:'tori_zangi',    nameJa:'若どりザンギ',            nameRo:'Wakadori Zangi',       nameVi:'Gà Chiên Zangi',             unit:'份', warnAt:2, active:true},
-  {id:'horumon',       nameJa:'塩ホルモン',              nameRo:'Shio Horumon',         nameVi:'Lòng heo nướng muối',        unit:'份', warnAt:2, active:true},
-  {id:'jaga_bata',     nameJa:'塩辛じゃがバター',        nameRo:'Shiokara Jaga Bata',   nameVi:'Khoai Tây Bơ Mắm Mực',      unit:'個', warnAt:3, active:true},
-  {id:'salmon',        nameJa:'ちゃんちゃんホイル焼き',  nameRo:'Chanchan Hoiru Yaki',  nameVi:'Lườn Cá Hồi Nướng Miso Bơ', unit:'份', warnAt:2, active:true},
-  {id:'jingisukan',    nameJa:'ジンギスカン炒め',        nameRo:'Jingisukan Itame',     nameVi:'Thịt Cừu Xào Gengis Khan',  unit:'份', warnAt:2, active:true},
-  {id:'hotate_onigiri',nameJa:'ホタテ焼きおにぎり',      nameRo:'Hotate Yaki Onigiri',  nameVi:'Cơm nắm sò điệp',           unit:'份', warnAt:2, active:true},
-  {id:'katsuo_onigiri',nameJa:'かつお昆布おにぎり',      nameRo:'Katsuo Kombu Onigiri', nameVi:'Cơm Nắm Cá Ngừ Bào',        unit:'份', warnAt:2, active:true},
-  {id:'soup_curry',    nameJa:'スープカレー',            nameRo:'Supu Kare',            nameVi:'Soup Curry Đùi Gà',          unit:'份', warnAt:2, active:true},
-  {id:'buta_don',      nameJa:'帯広名物！豚丼',          nameRo:'Obihiro Buta Don',     nameVi:'Cơm Ba Chỉ Heo Áp Cháo',    unit:'份', warnAt:2, active:true},
-  {id:'esukaroppi',    nameJa:'根室！エスカロップ',       nameRo:'Nemuro Esukaroppu',    nameVi:'Cơm Bơ Tỏi Heo Chiên Xù',  unit:'份', warnAt:2, active:true},
-  {id:'shoyu',         nameJa:'醤油',                   nameRo:'Shoyu',                nameVi:'Nước tương',                 unit:'本', warnAt:1, active:true},
-  {id:'soba_tsuyu',    nameJa:'蕎麦つゆ',               nameRo:'Soba Tsuyu',           nameVi:'Soba tsuyu',                 unit:'本', warnAt:1, active:true},
-  {id:'mayo',          nameJa:'マヨネーズ',              nameRo:'Mayonezu',             nameVi:'Mayonaise',                  unit:'袋', warnAt:1, active:true},
-  {id:'shiro_negi',    nameJa:'白ねぎ',                 nameRo:'Shiro Negi',           nameVi:'Baro (hành tây)',            unit:'袋', warnAt:1, active:true},
-  {id:'ao_negi',       nameJa:'青ネギ',                 nameRo:'Ao Negi',              nameVi:'Hành lá',                   unit:'袋', warnAt:1, active:true},
-  {id:'kyabetsu',      nameJa:'千切りキャベツ',          nameRo:'Sengiri Kyabetsu',     nameVi:'Bắp cải sợi',               unit:'袋', warnAt:1, active:true},
-  {id:'otoshi',        nameJa:'お通し',                 nameRo:'Otoshi',               nameVi:'Otoshi',                    unit:'袋', warnAt:2, active:true},
-  {id:'kushi',         nameJa:'串',                     nameRo:'Kushi',                nameVi:'Que xiên',                  unit:'袋', warnAt:1, active:true},
-  {id:'gohan',         nameJa:'ご飯',                   nameRo:'Gohan',                nameVi:'Cơm trắng',                 unit:'份', warnAt:3, active:true},
-  {id:'oden_soup',     nameJa:'おでんスープ',            nameRo:'Oden Supu',            nameVi:'Soup oden',                 unit:'袋', warnAt:1, active:true},
-  {id:'daikon',        nameJa:'大根',                   nameRo:'Daikon',               nameVi:'Daikon (củ cải)',            unit:'份', warnAt:3, active:true},
-  {id:'tamago',        nameJa:'たまご',                 nameRo:'Tamago',               nameVi:'Trứng',                     unit:'份', warnAt:3, active:true},
-  {id:'konyaku',       nameJa:'こんにゃく',              nameRo:'Konyaku',              nameVi:'Konyaku',                   unit:'份', warnAt:2, active:true},
-  {id:'atsuage',       nameJa:'厚揚げ豆腐',             nameRo:'Atsuage Tofu',         nameVi:'Đậu hũ chiên (atsuage)',    unit:'份', warnAt:2, active:true},
-  {id:'satsuma_age',   nameJa:'さつま揚げ',             nameRo:'Satsuma Age',          nameVi:'Chả cá chiên',              unit:'份', warnAt:2, active:true},
-  {id:'tsukune',       nameJa:'つくね',                 nameRo:'Tsukune',              nameVi:'Tsukune',                   unit:'份', warnAt:2, active:true},
-  {id:'gyutan',        nameJa:'牛タン',                 nameRo:'Gyu Tan',              nameVi:'Lưỡi bò',                   unit:'份', warnAt:2, active:true},
-  {id:'ebi_shinjo',    nameJa:'えび真丈',               nameRo:'Ebi Shinjo',           nameVi:'Chả tôm',                   unit:'份', warnAt:2, active:true},
-  {id:'tsubu',         nameJa:'つぶ貝',                 nameRo:'Tsubu Gai',            nameVi:'Ốc tsubu',                  unit:'份', warnAt:2, active:true},
-  {id:'rorukyabetsu',  nameJa:'ロールキャベツ',          nameRo:'Roll Kyabetsu',        nameVi:'Bắp cải cuộn',              unit:'份', warnAt:2, active:true},
+  // ─── ラーメンサラダ関連 ───
+  {id:'lettuce',         nameJa:'レタス',               nameRo:'Retasu',              nameVi:'Xà lách xé',                    unit:'袋(200G)', warnAt:2, active:true, menu:'ラーメンサラダ',                    menuVi:'Salad mì ramen'},
+  {id:'cucumber',        nameJa:'スライスきゅうり',       nameRo:'Suraisu kyūri',       nameVi:'Dưa leo thái mỏng',             unit:'袋(100G)', warnAt:2, active:true, menu:'ラーメンサラダ・きゅうり浅漬け',   menuVi:'Salad mì ramen・Dưa leo muối nhạt'},
+  {id:'panko',           nameJa:'パン粉',               nameRo:'Panko',               nameVi:'Bánh mì vụn chiên',             unit:'袋(200G)', warnAt:1, active:true, menu:'揚げ物',                           menuVi:'Các món chiên'},
+  {id:'heo_vun',         nameJa:'揚げ豚肉',             nameRo:'Age butaniku',        nameVi:'Heo vụn chiên',                 unit:'袋(100G)', warnAt:2, active:true, menu:'ラーメンサラダ・アスパラバター',   menuVi:'Salad mì ramen・Măng tây xào bơ'},
+  // ─── ザンギ ───
+  {id:'zangi_ko',        nameJa:'ザンギ粉',             nameRo:'Zangi-ko',            nameVi:'Bột Zangi',                     unit:'袋(500G)', warnAt:1, active:true, menu:'若鶏ザンギ・ザンタレ',             menuVi:'Gà Zangi・Zantare'},
+  {id:'tori_zangi',      nameJa:'若鶏ザンギ',           nameRo:'Wakadori Zangi',      nameVi:'Gà chiên Karaage',              unit:'份',       warnAt:2, active:true, menu:'若鶏ザンギ・ザンタレ',             menuVi:'Gà Zangi・Zantare'},
+  // ─── 野菜・食材 ───
+  {id:'jaga',            nameJa:'じゃがいも',           nameRo:'Jagaimo',             nameVi:'Khoai tây bi',                  unit:'個',       warnAt:3, active:true, menu:'じゃがバター塩辛',                 menuVi:'Khoai tây bơ mắm mực'},
+  {id:'corn',            nameJa:'コーン',               nameRo:'Kōn',                 nameVi:'Bắp ngọt đông lạnh',            unit:'袋',       warnAt:2, active:true, menu:'コーンバター',                     menuVi:'Bắp xào bơ'},
+  {id:'moyashi',         nameJa:'もやし',               nameRo:'Moyashi',             nameVi:'Giá sống chia phần',            unit:'袋(120G)', warnAt:2, active:true, menu:'ジンギスカン',                     menuVi:'Jingisukan'},
+  {id:'asupara',         nameJa:'アスパラ',             nameRo:'Asupara',             nameVi:'Măng tây',                      unit:'袋(150G)', warnAt:2, active:true, menu:'アスパラバター',                   menuVi:'Măng tây xào bơ'},
+  {id:'shiro_negi',      nameJa:'白ねぎ',               nameRo:'Shiro negi',          nameVi:'Hành baro cắt xéo',             unit:'袋(200G)', warnAt:1, active:true, menu:'',                                menuVi:''},
+  {id:'ao_negi',         nameJa:'青ねぎ',               nameRo:'Ao negi',             nameVi:'Hành lá thái nhỏ',              unit:'袋(100G)', warnAt:1, active:true, menu:'',                                menuVi:''},
+  {id:'kyabetsu',        nameJa:'千切りキャベツ',         nameRo:'Sengiri kyabetsu',    nameVi:'Bắp cải sợi',                   unit:'袋(200G)', warnAt:1, active:true, menu:'',                                menuVi:''},
+  // ─── 肉・魚 ───
+  {id:'jingisukan',      nameJa:'ジンギスカン用羊肉',    nameRo:'Jingisukan-yō yōniku',nameVi:'Thịt cừu xào Jingiskhan',       unit:'份',       warnAt:2, active:true, menu:'ジンギスカン',                     menuVi:'Jingisukan'},
+  {id:'salmon_ruibe',    nameJa:'サーモンルイベ',        nameRo:'Sāmon Ruibe',         nameVi:'Cá hồi Ruibe',                  unit:'份',       warnAt:2, active:true, menu:'サーモンルイベ',                   menuVi:'Cá hồi Ruibe'},
+  {id:'tako_zangi',      nameJa:'たこザンギ',           nameRo:'Tako Zangi',          nameVi:'Bạch tuộc chiên Zangi',         unit:'份',       warnAt:2, active:true, menu:'たこザンギ',                       menuVi:'Bạch tuộc chiên Zangi'},
+  {id:'horumon',         nameJa:'塩ホルモン',           nameRo:'Shio Horumon',        nameVi:'Lòng non cháy tỏi',             unit:'份',       warnAt:2, active:true, menu:'塩ホルモン',                       menuVi:'Lòng non cháy tỏi'},
+  {id:'buta_don_niku',   nameJa:'豚丼用豚肉',           nameRo:'Butadon-yō butaniku', nameVi:'Ba rọi Heo cắt sẵn',            unit:'袋(100G)', warnAt:2, active:true, menu:'豚丼',                             menuVi:'Cơm thịt heo'},
+  {id:'esukaroppi_niku', nameJa:'エスカロップ用豚カツ',  nameRo:'Esukaroppu tonkatsu', nameVi:'Heo chiên xù',                  unit:'袋(140G)', warnAt:2, active:true, menu:'エスカロップ',                     menuVi:'Esukaroppu'},
+  {id:'yodare_dori',     nameJa:'四川風よだれ鶏',        nameRo:'Shisen-fū Yodaredori',nameVi:'Ức gà sốt tứ xuyên',            unit:'份',       warnAt:2, active:true, menu:'四川風よだれ鶏',                   menuVi:'Gà sốt tứ xuyên'},
+  {id:'ika_furai',       nameJa:'イカフライ',           nameRo:'Ika Furai',           nameVi:'Mực chiên xù',                  unit:'份(2枚)',  warnAt:2, active:true, menu:'イカフライ',                       menuVi:'Mực chiên xù'},
+  // ─── ご飯・スープ ───
+  {id:'hotate_onigiri',  nameJa:'ホタテ炊き込みおにぎり', nameRo:'Hotate takikomi onigiri',nameVi:'Cơm nắm sò điệp nướng',     unit:'份',       warnAt:2, active:true, menu:'ホタテ炊き込みおにぎり',           menuVi:'Cơm nắm sò điệp nướng'},
+  {id:'butter_rice',     nameJa:'バターライス',          nameRo:'Batā raisu',          nameVi:'Cơm chiên bơ chia phần',        unit:'份',       warnAt:2, active:true, menu:'エスカロップ',                     menuVi:'Esukaroppu'},
+  {id:'gohan',           nameJa:'冷凍小分け白飯',        nameRo:'Reito kobetsu hakumai',nameVi:'Cơm trắng chia phần đông lạnh',unit:'份',       warnAt:3, active:true, menu:'スープカレー・白ごはん・おにぎり・豚丼', menuVi:'Cà ri・Cơm trắng・Onigiri・Cơm thịt heo'},
+  {id:'miso_ramen',      nameJa:'味噌ラーメンスープ',    nameRo:'Miso rāmen sūpu',     nameVi:'Bộ Soup Miso Ramen',            unit:'袋',       warnAt:1, active:true, menu:'味噌ラーメン',                     menuVi:'Mì Ramen vị Miso'},
+  {id:'soup_curry',      nameJa:'チキンスープカレー',    nameRo:'Chikin sūpu karē',    nameVi:'Soup Cà ri đùi gà',             unit:'份',       warnAt:2, active:true, menu:'札幌チキンスープカレー',           menuVi:'Cà ri gà kiểu Sapporo'},
+  // ─── 調味料・その他 ───
+  {id:'mayo',            nameJa:'マヨネーズ',           nameRo:'Mayonēzu',            nameVi:'Sốt Mayo',                      unit:'袋(700G)', warnAt:1, active:true, menu:'',                                menuVi:''},
+  {id:'soba_tsuyu',      nameJa:'そばつゆ',             nameRo:'Soba tsuyu',          nameVi:'Sốt Soba tsuyu',                unit:'袋(1KG)',  warnAt:1, active:true, menu:'',                                menuVi:''},
+  {id:'wafu_onion',      nameJa:'Wafuオニオンソース',   nameRo:'Wafu onion sōsu',     nameVi:'Sốt Wafu Onion',                unit:'袋(60G)',  warnAt:2, active:true, menu:'',                                menuVi:''},
+  {id:'otoshi',          nameJa:'お通し',               nameRo:'Otoshi',              nameVi:'Otoshi',                        unit:'袋(500G)', warnAt:2, active:true, menu:'',                                menuVi:''},
+  // ─── おでん ───
+  {id:'oden_soup',       nameJa:'おでんスープ',          nameRo:'Oden sūpu',           nameVi:'Soup Oden',                     unit:'袋(1.5KG)',warnAt:1, active:true, menu:'おでん',                           menuVi:'Oden'},
+  {id:'daikon',          nameJa:'大根',                 nameRo:'Daikon',              nameVi:'Củ cải trắng',                  unit:'份',       warnAt:3, active:true, menu:'おでん',                           menuVi:'Oden'},
+  {id:'tamago',          nameJa:'ゆで卵',               nameRo:'Yude tamago',         nameVi:'Trứng gà luộc',                 unit:'份',       warnAt:3, active:true, menu:'おでん',                           menuVi:'Oden'},
+  {id:'konyaku',         nameJa:'こんにゃく',           nameRo:'Konnyaku',            nameVi:'Đậu nưa miếng',                 unit:'份',       warnAt:2, active:true, menu:'おでん',                           menuVi:'Oden'},
+  {id:'atsuage',         nameJa:'厚揚げ',               nameRo:'Atsuage',             nameVi:'Đậu hũ chiên',                  unit:'份',       warnAt:2, active:true, menu:'おでん',                           menuVi:'Oden'},
+  {id:'satsuma_age',     nameJa:'さつま揚げ',           nameRo:'Satsuma-age',         nameVi:'Chả cá thác lác kiểu Nhật',     unit:'份',       warnAt:2, active:true, menu:'おでん',                           menuVi:'Oden'},
+  {id:'tsukune',         nameJa:'つくね',               nameRo:'Tsukune',             nameVi:'Thịt viên xiên',                unit:'份',       warnAt:2, active:true, menu:'おでん',                           menuVi:'Oden'},
+  {id:'gyutan',          nameJa:'牛タン串',             nameRo:'Gyūtan-gushi',        nameVi:'Xiên lưỡi bò',                  unit:'份',       warnAt:2, active:true, menu:'おでん',                           menuVi:'Oden'},
+  {id:'ebi_shinjo',      nameJa:'えび真丈',             nameRo:'Ebi Shinjo',          nameVi:'Tôm viên chiên',                unit:'份',       warnAt:2, active:true, menu:'おでん',                           menuVi:'Oden'},
+  {id:'rorukyabetsu',    nameJa:'ロールキャベツ',        nameRo:'Rōru kyabetsu',       nameVi:'Bắp cải cuộn thịt',             unit:'份',       warnAt:2, active:true, menu:'おでん',                           menuVi:'Oden'},
 ];
 
 // ════════════════════════════════════════════════════════════
 // BOOT / INIT
 // ════════════════════════════════════════════════════════════
-function boot() {
-  // Seed products if empty
-  if (!loadProds().length) saveProds(DEFAULT_PRODUCTS.map(p => ({...p})));
-  // Migration: add nameRo if missing
+async function boot() {
+  // ローディング表示
+  document.getElementById('screen-stock').innerHTML =
+    '<div style="text-align:center;padding:60px 20px;color:var(--sub)"><div style="font-size:32px;margin-bottom:12px">🔄</div><p>読み込み中 / Đang tải...</p></div>';
+
+  // Firestoreからデータロード
+  await loadFromFirestore();
+
+  // 商品マスタが空なら初期データを投入
+  if (!loadProds().length) {
+    await saveProds(DEFAULT_PRODUCTS.map(p => ({...p})));
+  }
+
+  // マイグレーション: nameRo / menuVi が不足している商品を補完
   const prods = loadProds();
   let changed = false;
   prods.forEach(p => {
-    if (!p.nameRo) {
-      const def = DEFAULT_PRODUCTS.find(d => d.id === p.id);
-      if (def) { p.nameRo = def.nameRo; changed = true; }
+    const def = DEFAULT_PRODUCTS.find(d => d.id === p.id);
+    if (def) {
+      if (!p.nameRo)  { p.nameRo  = def.nameRo;  changed = true; }
+      if (p.menuVi === undefined && def.menuVi !== undefined) { p.menuVi = def.menuVi; changed = true; }
     }
   });
-  if (changed) saveProds(prods);
-  // Apply language UI
+  if (changed) await saveProds(prods);
+
+  // 言語UI適用
   applyLangUI();
-  // Show init if no init event
+
+  // 初回在庫登録チェック
   if (!loadEvts().some(e => e.type === 'init')) {
     showInitOverlay();
+  } else {
+    renderStock();
   }
 }
 
@@ -452,7 +537,7 @@ function showInitOverlay() {
   const prods = loadProds().filter(p => p.active);
   document.getElementById('init-list').innerHTML = prods.map(p => `
     <div class="sli">
-      <div style="flex:1"><div class="nm">${pname(p)}</div><div class="ns">${pnamesub(p)}</div></div>
+      <div style="flex:1"><div class="nm">${pname(p)}</div><div class="ns">${pnamesub(p)}</div>${pmenu(p)?`<div class="ut">${pmenu(p)}</div>`:''}</div>
       <div class="stepper">
         <button class="stb" onclick="stepInit('${p.id}',-1)">−</button>
         <div class="stv" id="iv-${p.id}">0</div>
@@ -468,9 +553,9 @@ function stepInit(id, d) {
   const el = document.getElementById('iv-' + id);
   if (el) el.textContent = iVals[id];
 }
-function completeInit() {
+async function completeInit() {
   const items = loadProds().filter(p => p.active).map(p => ({ productId: p.id, qty: iVals[p.id] || 0 }));
-  addEvt('init', items, '初回在庫登録');
+  await addEvt('init', items, '初回在庫登録');
   document.getElementById('initov').classList.remove('open');
   toast(t('toastInit'));
   render('stock');
@@ -528,7 +613,7 @@ function stockItemHTML(p, qty) {
     <div class="si ${cls} ${on ? 'checked' : ''}" id="si-${p.id}" data-n="${p.nameJa} ${p.nameVi}" style="flex-direction:column;align-items:stretch">
       <div class="si-top" onclick="togSR('${p.id}',${qty})">
         <div class="chk ${on ? 'on' : ''}" id="chk-${p.id}">✓</div>
-        <div style="flex:1"><div class="nm">${pname(p)}</div><div class="ns">${pnamesub(p)}</div></div>
+        <div style="flex:1"><div class="nm">${pname(p)}</div><div class="ns">${pnamesub(p)}</div>${pmenu(p)?`<div class="ut">${pmenu(p)}</div>`:''}</div>
         <div class="sq">${qty}</div>
       </div>
       <div class="si-body ${on ? 'open' : ''}" id="sib-${p.id}">
@@ -589,8 +674,8 @@ function genSS() {
 function submitReport() {
   const ids = Object.keys(rChk).filter(id => rChk[id]);
   if (!ids.length) { toast(t('needSelect')); return; }
-  confirm2(t('confUpdate'), t('confUpdateBody', ids.length), () => {
-    addEvt('adjust', ids.map(id => ({ productId: id, qty: rVals[id] || 0 })), '残数報告');
+  confirm2(t('confUpdate'), t('confUpdateBody', ids.length), async () => {
+    await addEvt('adjust', ids.map(id => ({ productId: id, qty: rVals[id] || 0 })), '残数報告');
     ids.forEach(id => { delete rChk[id]; delete rVals[id]; });
     toast(t('toastUpdated'));
     renderStock();
@@ -630,7 +715,7 @@ function delItemHTML(p) {
   return `<div class="di" id="di-${p.id}">
     <div class="di-row">
       <div class="chk ${on ? 'on' : ''}" id="dchk-${p.id}" onclick="togD('${p.id}')" style="cursor:pointer">✓</div>
-      <div style="flex:1"><div class="nm">${pname(p)}</div><div class="ns">${pnamesub(p)}</div></div>
+      <div style="flex:1"><div class="nm">${pname(p)}</div><div class="ns">${pnamesub(p)}</div>${pmenu(p)?`<div class="ut">${pmenu(p)}</div>`:''}</div>
       <div class="stepper" style="width:auto">
         <button class="stb" style="width:46px;height:46px" onclick="stepD('${p.id}',-1)">−</button>
         <div class="stv" id="dv-${p.id}" style="font-size:22px;min-width:46px">${dVals[p.id] || 0}</div>
@@ -672,8 +757,8 @@ function showAllDel() {
 function submitDel() {
   const ids = Object.keys(dChk).filter(id => dChk[id] && dVals[id] > 0);
   if (!ids.length) { toast(t('needQty')); return; }
-  confirm2(t('confDel'), t('confDelBody', ids.length), () => {
-    addEvt('delivery', ids.map(id => ({ productId: id, qty: dVals[id] })), '納品確認');
+  confirm2(t('confDel'), t('confDelBody', ids.length), async () => {
+    await addEvt('delivery', ids.map(id => ({ productId: id, qty: dVals[id] })), '納品確認');
     ids.forEach(id => { delete dChk[id]; dVals[id] = 0; });
     toast(t('toastDel'));
     go('stock');
@@ -742,7 +827,7 @@ function renderSales() {
     <div>${sorted.map(p => {
       if (!(p.id in sVals)) sVals[p.id] = 0;
       return `<div class="sli">
-        <div style="flex:1"><div class="nm">${pname(p)}</div><div class="ns">${pnamesub(p)}</div><div class="ut">${t('stockLbl')} ${sm[p.id] || 0} ${p.unit}</div></div>
+        <div style="flex:1"><div class="nm">${pname(p)}</div><div class="ns">${pnamesub(p)}</div>${pmenu(p)?`<div class="ut">${pmenu(p)}</div>`:''}</div>
         <div class="stepper">
           <button class="stb" onclick="stepS('${p.id}',-1)">−</button>
           <div class="stv" id="sv-${p.id}">${sVals[p.id]}</div>
@@ -764,8 +849,8 @@ function stepS(id, d) {
 function submitSales() {
   const items = Object.entries(sVals).filter(([, q]) => q > 0).map(([pid, qty]) => ({ productId: pid, qty }));
   if (!items.length) { toast(t('needQty')); return; }
-  confirm2(t('confSale'), t('confSaleBody', items.length), () => {
-    addEvt('sale', items, '販売確定');
+  confirm2(t('confSale'), t('confSaleBody', items.length), async () => {
+    await addEvt('sale', items, '販売確定');
     items.forEach(i => { sVals[i.productId] = 0; });
     toast(t('toastSale'));
     go('stock');
@@ -806,7 +891,7 @@ function stepSaleResult(id, d) {
   if (el) el.textContent = m.qty;
 }
 
-function applySaleResult() {
+async function applySaleResult() {
   const matched = window._saleMatched || [];
   matched.forEach(i => { sVals[i.product.id] = i.qty; });
   window._saleMatched = null;
@@ -939,7 +1024,7 @@ function renderAdmin() {
       <div class="adm-body" style="padding:0 16px">
         ${prods.map(p => `
           <div class="pr">
-            <div style="flex:1"><div class="nm">${pname(p)}</div><div class="ns">${pnamesub(p)}</div><div class="ut">${t('stockLbl')} ${sm[p.id]||0} / ${t('warnLbl')} ${p.warnAt}</div></div>
+            <div style="flex:1"><div class="nm">${pname(p)}</div><div class="ns">${pnamesub(p)}</div><div class="ut">${p.unit} ／ 在庫 ${sm[p.id]||0}${pmenu(p)?' ／ '+pmenu(p):''}</div></div>
             <span class="badge ${p.active ? '' : 'off'}">${p.active ? t('active') : t('inactive')}</span>
             <button class="btn btn-g btn-sm" style="width:auto;padding:8px 12px;margin-left:6px" onclick="togProd('${p.id}')">${p.active ? t('btnStop') : t('btnRevive')}</button>
           </div>`).join('')}
@@ -982,33 +1067,38 @@ function togAddForm() {
   if (f) f.style.display = addFormOpen ? 'block' : 'none';
 }
 
-function addProd() {
+async function addProd() {
   const ja   = document.getElementById('np-ja').value.trim();
   const vi   = document.getElementById('np-vi').value.trim();
   const unit = document.getElementById('np-unit').value.trim() || '份';
   const warn = parseInt(document.getElementById('np-warn').value) || 2;
   if (!ja || !vi) { toast(t('needName')); return; }
   const prods = loadProds();
-  prods.push({ id: 'p_' + Date.now(), nameJa: ja, nameVi: vi, nameRo: ja, unit, warnAt: warn, active: true });
-  saveProds(prods);
-  addEvt('product_add', [], '商品追加: ' + ja);
+  prods.push({ id: 'p_' + Date.now(), nameJa: ja, nameVi: vi, nameRo: ja, menuVi: '', unit, warnAt: warn, active: true });
+  await saveProds(prods);
+  await addEvt('product_add', [], '商品追加: ' + ja);
   toast(t('toastAdded', ja));
   addFormOpen = false;
   renderAdmin();
 }
 
-function togProd(id) {
+async function togProd(id) {
   const prods = loadProds();
   const p = prods.find(x => x.id === id);
   if (!p) return;
   p.active = !p.active;
-  saveProds(prods);
+  await saveProds(prods);
   toast(pname(p) + ' → ' + (p.active ? t('active') : t('inactive')));
   renderAdmin();
 }
 
 function resetAll() {
-  confirm2(t('confReset'), t('confResetBody'), () => {
+  confirm2(t('confReset'), t('confResetBody'), async () => {
+    if (window._db) {
+      const {doc, setDoc} = window._fs;
+      await setDoc(doc(window._db,'hokkiya','products'),{list:[]});
+      await setDoc(doc(window._db,'hokkiya','events'),{list:[]});
+    }
     localStorage.removeItem('hk_products');
     localStorage.removeItem('hk_events');
     location.reload();
@@ -1068,9 +1158,9 @@ function importData(input) {
       const data = JSON.parse(e.target.result);
       if (!data.products || !data.events) throw new Error('invalid');
       const ts = data.exportedAt ? new Date(data.exportedAt).toLocaleString('ja-JP') : '不明';
-      confirm2('データを読み込みますか？', `保存日時: ${ts}\n現在のデータは上書きされます。`, () => {
-        saveProds(data.products);
-        saveEvts(data.events);
+      confirm2('データを読み込みますか？', `保存日時: ${ts}\n現在のデータは上書きされます。`, async () => {
+        await saveProds(data.products);
+        await saveEvts(data.events);
         toast(t('toastRestored'));
         renderAdmin();
       });
@@ -1119,10 +1209,34 @@ function toast(msg) {
 }
 
 // ════════════════════════════════════════════════════════════
-// START
+// START — Firebase dynamic import → boot
 // ════════════════════════════════════════════════════════════
-boot();
-renderStock();
+(async () => {
+  try {
+    const { initializeApp } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js');
+    const { getFirestore, doc, getDoc, setDoc } = await import('https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js');
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyB9BuYHf49zBbWsLmJuVhKFjm7horPeuTQ",
+      authDomain: "hokkiya-stock.firebaseapp.com",
+      projectId: "hokkiya-stock",
+      storageBucket: "hokkiya-stock.firebasestorage.app",
+      messagingSenderId: "620448183236",
+      appId: "1:620448183236:web:72acbf97e0ba14e69eea91"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db  = getFirestore(app);
+    window._db = db;
+    window._fs = { doc, getDoc, setDoc };
+  } catch(e) {
+    console.warn('Firebase init failed, using localStorage fallback:', e);
+    // オフラインフォールバック: localStorageのみで動作
+    window._db = null;
+    window._fs = null;
+  }
+  await boot();
+})();
 </script>
 </body>
 </html>
